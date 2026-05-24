@@ -26,3 +26,20 @@ export type DbRefreshToken = {
 export type DbRefreshTokenWithUser = {
   user?: DbUser;
 } & DbRefreshToken;
+
+export type DbApiKey = {
+  id: string;
+  name: string;
+  hash: string;
+  mask: string;
+  user_id: string;
+  prefix: string;
+  is_active: boolean;
+  last_used_at: DbTimestamp | null;
+  expires_at: DbTimestamp | null;
+  created_at: DbTimestamp;
+};
+
+export type DbApiKeyWithUser = {
+  user?: DbUser;
+} & DbApiKey;

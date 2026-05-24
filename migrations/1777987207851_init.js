@@ -40,6 +40,26 @@ export const up = (pgm) => {
         ON DELETE CASCADE
     );
     `);
+  pgm.sql(`
+        CREATE TABLE api_keys(
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+            hash VARCHAR(255) UNIQUE NOT NULL,
+            mask VARCHAR(20) NOT NULL,
+            prefix VARCHAR(20) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+
+            is_active BOOLEAN DEFAULT TRUE,
+            last_used_at TIMESTAMP,
+            expires_at TIMESTAMP,
+            
+            user_id UUID NOT NULL,
+
+            CONSTRAINT fk_events FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+
+            created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );      
+        `);
 };
 
 /**
@@ -57,4 +77,7 @@ export const down = (pgm) => {
   pgm.sql(`
     DROP EXTENSION IF EXISTS pgcrypto;
     `);
+  pgm.sql(`
+        DROP TABLE api_keys;
+        `);
 };

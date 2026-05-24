@@ -31,6 +31,11 @@ const envSchema = z.object({
   ACCESS_TOKEN_EXPIRY: z.string().default("15m"),
   REFRESH_TOKEN_EXPIRY: z.string().default("7d"),
 
+  // API_KEY
+  API_KEY_SECRET: z
+    .string()
+    .min(32, "API_KEY_SECRET must be at least 32 chars"),
+
   REFRESH_TOKEN_COOKIE_KEY: z.string().default("refresh_token"),
 
   // Rate limiting
