@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["test", "development", "production"])
@@ -49,7 +50,7 @@ const envSchema = z.object({
   EMAIL_VERIFICATION_COOLDOWN: z.coerce.number().default(30), // 60 seconds
 
   // Bcrypt
-  BCRYPT_ROUNDS: z.coerce.number().default(12),
+  BCRYPT_ROUNDS: z.coerce.number().default(8),
 
   // App
   CORS_ORIGIN: z.string().default("*"),
@@ -60,7 +61,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error("❌ Invalid environment variables:");
+  console.error("Invalid environment variables:");
   console.error(z.treeifyError(parsed.error));
   process.exit(1);
 }

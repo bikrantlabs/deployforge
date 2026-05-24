@@ -46,6 +46,7 @@ export const createAuthService = (deps: {
 
   const service: AuthService = {
     async register(data) {
+      logger.info("AUTH SERVICE HIT");
       const existing = await userRepository.findByEmail(data.email);
       if (existing) {
         throw new ConflictError("An account with this email already exists.");
@@ -56,7 +57,7 @@ export const createAuthService = (deps: {
 
       const user = await userRepository.create({
         email: data.email,
-        passwordHash,
+        passwordHash: passwordHash,
       });
 
       //

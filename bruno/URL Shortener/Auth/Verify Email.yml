@@ -1,0 +1,32 @@
+info:
+  name: Verify Email
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/verify-email"
+  body:
+    type: json
+    data: |-
+      {
+        "email":"testuser1@gmail.com",
+        "code":"258202"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const accessToken = res.body.data?.tokens?.accessToken;
+        const refreshToken = res.body.data?.tokens?.refreshToken;
+
+        bru.setEnvVar("accessToken", accessToken);
+        bru.setEnvVar("refreshToken", refreshToken);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

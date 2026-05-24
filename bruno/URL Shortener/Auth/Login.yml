@@ -1,0 +1,32 @@
+info:
+  name: Login
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "email":"testuser1@gmail.com",
+        "password":"Testuser1@gmail.com"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const accessToken = res.body.data?.tokens?.accessToken;
+        const refreshToken = res.body.data?.tokens?.refreshToken;
+
+        bru.setVar("accessToken", accessToken);
+        bru.setVar("refreshToken", refreshToken);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -15,6 +15,6 @@
     "sourceMap": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "test"],
+  "include": ["src", "test", "load-tests"],
   "exclude": ["dist", "node_modules", "migrations"]
 }
