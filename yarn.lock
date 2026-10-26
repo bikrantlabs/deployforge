@@ -8333,6 +8333,7 @@ __metadata:
     rimraf: "npm:5.0.10"
     supertest: "npm:^7.2.2"
     typescript: "npm:5.9.3"
+    uuid: "npm:^14.0.3"
     vitest: "npm:^4.1.5"
     zod: "npm:^4.4.3"
   bin:
@@ -8550,6 +8551,15 @@ __metadata:
   version: 1.1.0
   resolution: "uuid-parse@npm:1.1.0"
   checksum: 10/8a384d34c04a6bc5b33262f431026e2a923cfcfb72996e2daa2fc5de2f0738bac41c0182fdcf1a22d6391b725c625eca0bdbd9d36f1c01ce5d24b1d66601d2af
+  languageName: node
+  linkType: hard
+
+"uuid@npm:^14.0.3":
+  version: 14.0.3
+  resolution: "uuid@npm:14.0.3"
+  bin:
+    uuid: dist-node/bin/uuid
+  checksum: 10/a6ab4e6ef84ff77b574846215c425c915de035395710e09f083f3bc1d4744df63db78598da0d04619a0a60a15a9cce2bc7c1ef10bf302349e761838816d798a7
   languageName: node
   linkType: hard
 

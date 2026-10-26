@@ -3,7 +3,6 @@ import { z } from "zod";
 // ─── Reusable field schemas ───────────────────────────────────────────────────
 
 const emailSchema = z
-  .string({ error: "Email is required" })
   .email("Must be a valid email address")
   .toLowerCase()
   .trim();

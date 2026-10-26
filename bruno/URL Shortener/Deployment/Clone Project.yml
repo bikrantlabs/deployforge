@@ -1,0 +1,20 @@
+info:
+  name: Clone Project
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/deployments/projects/:projectId/clone"
+  params:
+    - name: projectId
+      value: ""
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

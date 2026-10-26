@@ -1,0 +1,23 @@
+info:
+  name: Create Project
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/deployments/projects"
+  body:
+    type: json
+    data: |-
+      {
+        "cloneUrl":"https://github.com/jstibenpb/nodejs-express-template",
+        "projectName":"First Project"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

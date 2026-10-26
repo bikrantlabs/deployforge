@@ -14,6 +14,9 @@ const envSchema = z.object({
   // Redis
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
 
+  // GitHub API (optional; improves unauthenticated rate limits)
+  GITHUB_TOKEN: z.string().optional(),
+
   // Emails
   EMAIL_HOST: z.string().min(1, "Email host is required").default("localhost"),
   EMAIL_PORT: z.coerce.number("Email Port is required").default(1025), // Mailpit default port

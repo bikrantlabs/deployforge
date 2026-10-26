@@ -42,9 +42,9 @@ export class UserNotVerifiedError extends AppError {
   }
 }
 
-export class TokenExpiredError extends AppError {
+export class AccessTokenExpiredError extends AppError {
   constructor() {
-    super("Token has expired", 401, "TOKEN_EXPIRED");
+    super("Access Token has been expired", 401, "ACCESS_TOKEN_EXPIRED");
   }
 }
 
@@ -54,9 +54,9 @@ export class InvalidTokenError extends AppError {
   }
 }
 
-export class TokenRevokedError extends AppError {
+export class AccessTokenRevokedError extends AppError {
   constructor() {
-    super("Token has been revoked", 401, "TOKEN_REVOKED");
+    super("Access Token has been revoked", 401, "ACCESS_TOKEN_REVOKED");
   }
 }
 // ─── Verification Code Error ──────────────────────────────────────────────────────────

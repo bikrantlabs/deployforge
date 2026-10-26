@@ -12,8 +12,8 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import { config } from "src/shared/config/config";
 import {
   InvalidTokenError,
-  TokenExpiredError,
-  TokenRevokedError,
+  AccessTokenExpiredError,
+  AccessTokenRevokedError,
 } from "src/shared/errors/app-error";
 import { parseExpiryToMs } from "src/shared/utils/date";
 
@@ -77,7 +77,7 @@ export const createTokenService = (deps: {
         return decoded as AccessTokenPayload;
       } catch (e) {
         if (e instanceof jwt.TokenExpiredError) {
-          throw new TokenExpiredError();
+          throw new AccessTokenExpiredError();
         }
         if (e instanceof jwt.JsonWebTokenError) {
           throw new InvalidTokenError();
@@ -106,7 +106,7 @@ export const createTokenService = (deps: {
         return decoded as RefreshTokenPayload;
       } catch (err) {
         if (err instanceof jwt.TokenExpiredError) {
-          throw new TokenExpiredError();
+          throw new AccessTokenExpiredError();
         }
         if (err instanceof jwt.JsonWebTokenError) {
           throw new InvalidTokenError();
@@ -162,7 +162,7 @@ export const createTokenService = (deps: {
       //     // Hash mismatch on a cached entry = likely token theft, revoke everything
       //     logger.warn({ userId: payload.sub, jti: payload.jti }, "Refresh token hash mismatch — possible theft");
       //     await tokenService.revokeAllUserTokens(payload.sub);
-      //     throw new TokenRevokedError();
+      //     throw new AccessTokenRevokedError();
       //   }
       //   return payload;
       // }
@@ -173,10 +173,10 @@ export const createTokenService = (deps: {
         throw new InvalidTokenError();
       }
       if (dbToken.revokedAt) {
-        throw new TokenRevokedError();
+        throw new AccessTokenRevokedError();
       }
       if (dbToken.expiresAt < new Date()) {
-        throw new TokenExpiredError();
+        throw new AccessTokenExpiredError();
       }
       if (dbToken.tokenHash !== tokenHash) {
         logger.warn(
@@ -184,7 +184,7 @@ export const createTokenService = (deps: {
           "Refresh token hash mismatch in DB",
         );
         await service.revokeAllUserTokens(payload.sub);
-        throw new TokenRevokedError();
+        throw new AccessTokenRevokedError();
       }
 
       // Re-cache on DB hit (token was evicted from Redis but is still valid)

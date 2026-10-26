@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authController } from "./auth.controller";
 import { asyncHandler } from "src/shared/errors/error-handler";
-import { authenticate } from "./middleware/auth.middleware";
+import { authenticate } from "src/shared/middlewares/auth.middleware";
 import { validate } from "src/shared/middlewares/validation.middleware";
 import {
   loginSchema,
