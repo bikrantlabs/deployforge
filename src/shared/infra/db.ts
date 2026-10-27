@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, PoolClient } from "pg";
 import { logger } from "../logger";
 
 let pool: Pool | null = null;
@@ -14,6 +14,29 @@ export const getPool = () => {
     });
   }
   return pool;
+};
+
+export const withTransaction = async <T>(
+  callback: (client: PoolClient) => Promise<T>,
+): Promise<T> => {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    try {
+      const result = await callback(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        // Preserve the original operation error if rollback also fails.
+      }
+      throw error;
+    }
+  } finally {
+    client.release();
+  }
 };
 
 export const connectDB = async () => {

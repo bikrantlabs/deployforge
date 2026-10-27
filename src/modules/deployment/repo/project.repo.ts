@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, PoolClient } from "pg";
 import {
   CreateProjectData,
   FindProjectByNameData,
@@ -19,9 +19,9 @@ function toPublicProject(project: DbProject): Project {
 
 export const createProjectRepository = (pool: Pool): ProjectRepository => {
   return {
-    async create(data: CreateProjectData) {
+    async create(data: CreateProjectData, client: PoolClient) {
       try {
-        await pool.query(
+        await client.query(
           "INSERT INTO projects(id, name, source_url, user_id) VALUES($1, $2, $3, $4)",
           [data.projectId, data.projectName, data.sourceUrl, data.userId],
         );

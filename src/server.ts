@@ -6,6 +6,7 @@ import { connectDB } from "./shared/infra/db";
 import { initQueues } from "./shared/infra/events/queue";
 import { startAllWorkers } from "./shared/infra/events/worker";
 import { logger } from "./shared/logger";
+import { startOutboxRelay } from "./modules/deployment/container";
 
 async function start() {
   try {
@@ -18,6 +19,7 @@ async function start() {
     initQueues();
     startAllWorkers();
     registerAuthEventListener();
+    const stopOutboxRelay = startOutboxRelay();
 
     const app = createApp();
 
@@ -28,6 +30,7 @@ async function start() {
 
     async function shutdown(signal: string) {
       logger.info({ signal }, "Shutdown signal received");
+      stopOutboxRelay();
 
       server.close(async () => {
         logger.info("HTTP server closed");

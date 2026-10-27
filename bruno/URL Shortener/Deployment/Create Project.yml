@@ -6,6 +6,9 @@ info:
 http:
   method: POST
   url: "{{baseUrl}}/deployments/projects"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
   body:
     type: json
     data: |-
