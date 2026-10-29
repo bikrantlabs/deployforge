@@ -20,6 +20,7 @@ export type FindProjectByIdData = {
 
 export type ProjectRepository = {
   create(data: CreateProjectData, client: PoolClient): Promise<void>;
+  listForUser(userId: string): Promise<Project[]>;
   findUniqueByName(data: FindProjectByNameData): Promise<Project | null>;
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
 };

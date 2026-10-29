@@ -6,6 +6,7 @@ import { connectDB } from "./shared/infra/db";
 import { initQueues } from "./shared/infra/events/queue";
 import { startAllWorkers } from "./shared/infra/events/worker";
 import { logger } from "./shared/logger";
+import { ensureMiseCacheLink } from "./shared/railpack/ensure-mise-cache-link";
 import {
   startOutboxRelay,
   startCloneWorker,
@@ -16,6 +17,7 @@ async function start() {
     console.error(
       "===== FRESH CODE RUNNING at " + new Date().toISOString() + " =====",
     );
+    await ensureMiseCacheLink(config.RAILPACK_MISE_VERSION);
     await connectDB();
     await connectRedis();
 

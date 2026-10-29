@@ -19,6 +19,14 @@ function toPublicProject(project: DbProject): Project {
 
 export const createProjectRepository = (pool: Pool): ProjectRepository => {
   return {
+    async listForUser(userId: string): Promise<Project[]> {
+      const { rows } = await pool.query<DbProject>(
+        "SELECT * FROM projects WHERE user_id = $1",
+        [userId],
+      );
+      return rows.map(toPublicProject);
+    },
+
     async create(data: CreateProjectData, client: PoolClient) {
       try {
         await client.query(

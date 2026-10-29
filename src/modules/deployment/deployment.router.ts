@@ -9,6 +9,12 @@ import { getProjectJobStatusRequestSchema } from "./dto/get-project-job-status.r
 
 export const deploymentRouter = Router();
 
+deploymentRouter.get(
+  "/projects",
+  authenticate,
+  asyncHandler(deploymentController.listProjects),
+);
+
 deploymentRouter.post(
   "/projects",
   authenticate,
@@ -21,6 +27,13 @@ deploymentRouter.post(
   authenticate,
   validate(cloneProjectRequestSchema),
   asyncHandler(deploymentController.cloneProject),
+);
+
+deploymentRouter.post(
+  "/projects/:projectId/detect",
+  authenticate,
+  validate(cloneProjectRequestSchema),
+  asyncHandler(deploymentController.detectProject),
 );
 
 deploymentRouter.get(

@@ -1,3 +1,5 @@
+import { DetectionLog } from "src/shared/railpack/errors";
+
 export type ProjectJobStages = "cloning" | "building" | "deploying";
 export type ProjectJobStatus =
   | "queued"
@@ -49,4 +51,33 @@ export type Outbox = {
   createdAt: Date;
   sent_at?: Date;
 };
-// Repository
+
+/**
+ * A package version resolved by during detection
+ * (e.g. node -> 24.21.0).
+ */
+export type ResolvedPackage = {
+  name: string;
+  requestedVersion: string;
+  resolvedVersion: string;
+  source?: string;
+};
+
+export type ProjectDetection = {
+  /** Detected providers, e.g. ['node'] or ['python'] */
+  providers: string[];
+  /** Provider-specific metadata, e.g. { nodePackageManager: 'npm' } */
+  metadata: Record<string, string>;
+  /** Toolchain packages with resolved versions */
+  packages: ResolvedPackage[];
+  /** Start command Railpack would use for the container, if detected */
+  startCommand: string | null;
+  /** Environment variables from the plan's deploy configuration */
+  variables: Record<string, string>;
+  /** Warnings/suggestions gathered during detection */
+  logs: DetectionLog[];
+};
+
+export type ProjectConfigDetector = {
+  detect(workspace: string): Promise<ProjectDetection>;
+};

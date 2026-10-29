@@ -7,6 +7,12 @@ const envSchema = z.object({
     .enum(["test", "development", "production"])
     .default("development"),
   PORT: z.coerce.number().default(8000),
+  RAILPACK_DETECTION_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60_000),
+  RAILPACK_MISE_VERSION: z.string().default("2026.10.8"),
 
   // Database
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),

@@ -18,20 +18,21 @@ function expandHome(target: string): string {
 export class WorkspaceProvisioner {
   private readonly WORKSPACE_ROOT: string | undefined;
   constructor() {}
+
+  destinationFor(project: Pick<Project, "userId" | "projectName">): string {
+    const root = this.WORKSPACE_ROOT ?? DEFAULT_WORKSPACE_ROOT;
+    return path.resolve(expandHome(root), project.userId, project.projectName);
+  }
+
   /**
    *
    * @param project - Project Object
    * @returns destination - The destionation directory where the project will be cloned into: /userId/projectName
    */
   async prepare(project: Project): Promise<string> {
-    const root = this.WORKSPACE_ROOT ?? DEFAULT_WORKSPACE_ROOT;
-    // Keyed on the user id + project id rather than fullName: a GitLab full name can
-    // contain slashes, which would silently create nested directories.
-    const destination = path.resolve(
-      expandHome(root),
-      project.userId,
-      project.projectName,
-    );
+    // Keyed on the user id + project name so the location can be reconstructed
+    // by later background jobs without persisting clone output.
+    const destination = this.destinationFor(project);
 
     await mkdir(destination, { recursive: true });
 
