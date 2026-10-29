@@ -6,7 +6,10 @@ import { connectDB } from "./shared/infra/db";
 import { initQueues } from "./shared/infra/events/queue";
 import { startAllWorkers } from "./shared/infra/events/worker";
 import { logger } from "./shared/logger";
-import { startOutboxRelay } from "./modules/deployment/container";
+import {
+  startOutboxRelay,
+  startCloneWorker,
+} from "./modules/deployment/container";
 
 async function start() {
   try {
@@ -17,7 +20,7 @@ async function start() {
     await connectRedis();
 
     initQueues();
-    startAllWorkers();
+    const workers = startAllWorkers([startCloneWorker]);
     registerAuthEventListener();
     const stopOutboxRelay = startOutboxRelay();
 
@@ -35,7 +38,7 @@ async function start() {
       server.close(async () => {
         logger.info("HTTP server closed");
         try {
-          // await emailWorker.close();
+          await Promise.all(workers.map((worker) => worker.close()));
           // await disconnectDatabase();
           // await disconnectRedis();
           logger.info("Graceful shutdown complete");

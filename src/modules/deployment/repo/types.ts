@@ -26,6 +26,28 @@ export type ProjectRepository = {
 
 export type ProjectJobRepository = {
   createJob(job: ProjectJob, client: PoolClient): Promise<void>;
+  findStatusForUser(input: {
+    jobId: string;
+    userId: string;
+  }): Promise<ProjectJobStatusView | null>;
+  markQueued(jobId: string): Promise<"queued" | "terminal" | "missing">;
+  claimQueued(jobId: string): Promise<boolean>;
+  getStatus(jobId: string): Promise<ProjectJob["status"] | null>;
+  setStatus(input: {
+    jobId: string;
+    status: ProjectJob["status"];
+    currentStage?: ProjectJob["currentStage"];
+    message?: string | null;
+  }): Promise<boolean>;
+};
+
+export type ProjectJobStatusView = {
+  jobId: string;
+  projectId: string;
+  status: ProjectJob["status"];
+  currentStage: ProjectJob["currentStage"];
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type OutboxMessage = {

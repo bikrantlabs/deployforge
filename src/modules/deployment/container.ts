@@ -9,18 +9,18 @@ import { createCloneProjectService } from "./services/clone-project.service";
 import { WorkspaceProvisioner } from "./lib/workspace-provisioner";
 import { GitSourceCloner } from "./lib/repo-cloner";
 import { config } from "src/shared/config/config";
-import { logger } from "src/shared/logger";
+import { publishOutbox } from "./services/publish-outbox";
+import { createCloneWorker } from "./workers/clone.worker";
+import { createGetProjectJobStatusService } from "./services/get-project-job-status.service";
 
 const repoDetailFetcher = new HttpRepoDetailFetcher(config.GITHUB_TOKEN);
 const pool = getPool();
 const projectRepo = createProjectRepository(pool);
-const projectJobRepo = createProjectJobRepo();
+const projectJobRepo = createProjectJobRepo(pool);
 const outboxRepo = createOutboxRepo(pool);
 const outboxRelay = createOutboxRelay({
   outboxRepo,
-  publish: async (message) => {
-    logger.info({ message }, "Outbox message ready for publishing");
-  },
+  publish: (message) => publishOutbox(message, projectJobRepo),
 });
 
 const workspaceProvisioner = new WorkspaceProvisioner();
@@ -40,6 +40,16 @@ const cloneProjectService = createCloneProjectService({
   repoCloner,
 });
 
-export const startOutboxRelay = () => outboxRelay.start();
+const getProjectJobStatusService = createGetProjectJobStatusService({
+  projectJobRepo,
+});
 
-export { createProjectService, cloneProjectService };
+export const startOutboxRelay = () => outboxRelay.start();
+export const startCloneWorker = () =>
+  createCloneWorker({ projectJobRepo, cloneProjectService });
+
+export {
+  createProjectService,
+  cloneProjectService,
+  getProjectJobStatusService,
+};

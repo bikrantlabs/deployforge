@@ -5,6 +5,7 @@ import { authenticate } from "src/shared/middlewares/auth.middleware";
 import { validate } from "src/shared/middlewares/validation.middleware";
 import { createProjectRequestSchema } from "./dto/create-project.request";
 import { cloneProjectRequestSchema } from "./dto/clone-project.request";
+import { getProjectJobStatusRequestSchema } from "./dto/get-project-job-status.request";
 
 export const deploymentRouter = Router();
 
@@ -20,4 +21,11 @@ deploymentRouter.post(
   authenticate,
   validate(cloneProjectRequestSchema),
   asyncHandler(deploymentController.cloneProject),
+);
+
+deploymentRouter.get(
+  "/jobs/:jobId",
+  authenticate,
+  validate(getProjectJobStatusRequestSchema),
+  asyncHandler(deploymentController.getProjectJobStatus),
 );

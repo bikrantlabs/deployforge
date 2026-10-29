@@ -29,7 +29,7 @@ export const createCreateProjectService = (deps: {
       cloneUrl: string;
       projectName: string;
       userId: string;
-    }): Promise<Project> {
+    }): Promise<Project & { jobId: string }> {
       const existing = await projectRepo.findUniqueByName({
         userId: input.userId,
         projectName: input.projectName,
@@ -56,13 +56,18 @@ export const createCreateProjectService = (deps: {
         jobId: generateUUID(),
         projectId: project.projectId,
         userId: project.userId,
-        status: "queued",
+        status: null,
+        currentStage: null,
       };
 
       const outbox: Outbox = {
         outboxId: generateUUID(),
         jobId: job.jobId,
-        payload: { projectId: project.projectId },
+        payload: {
+          jobId: job.jobId,
+          projectId: project.projectId,
+          userId: project.userId,
+        },
         topic: "clone.requested",
         createdAt: new Date(),
       };
@@ -73,7 +78,10 @@ export const createCreateProjectService = (deps: {
         await outboxRepo.create(outbox, client);
       });
 
-      return project;
+      return {
+        ...project,
+        jobId: job.jobId,
+      };
     },
   };
 };

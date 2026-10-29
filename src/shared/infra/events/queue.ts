@@ -21,6 +21,7 @@ export class TypedQueue<TQueueName extends QueueName> {
     jobName: TJobName,
     payload: JobPayloadType<TQueueName, TJobName>,
     options?: {
+      jobId?: string;
       attempts?: number;
       backoff?: { type: "exponential" | "fixed"; delay: number };
       delay?: number;
@@ -41,10 +42,11 @@ export const queues = {} as {
 
 // Initialize all queues
 export function initQueues() {
-  const queueNames: QueueName[] = ["auth_email"];
+  const queueNames: QueueName[] = ["auth_email", "clone"];
+  const queueRegistry = queues as Record<QueueName, TypedQueue<QueueName>>;
 
   for (const name of queueNames) {
-    queues[name] = new TypedQueue(name);
+    queueRegistry[name] = new TypedQueue(name);
   }
 }
 

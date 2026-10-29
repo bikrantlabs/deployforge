@@ -8,9 +8,16 @@ export type QueueRegistry = {
       email: string;
     };
   };
+  clone: {
+    "clone-project": {
+      jobId: string;
+      projectId: string;
+      userId: string;
+    };
+  };
 };
 
-// QueueName will be direct keys of registry: "auth:email" | "..." | "..." and so on.
+// QueueName will be direct keys of registry: "auth_email" | "..." | "..." and so on.
 export type QueueName = keyof QueueRegistry;
 
 /**

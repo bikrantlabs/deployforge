@@ -1,9 +1,14 @@
 import { ApiResponse } from "src/shared/api-response";
 import { Request, Response } from "express";
-import { createProjectService, cloneProjectService } from "./container";
+import {
+  createProjectService,
+  cloneProjectService,
+  getProjectJobStatusService,
+} from "./container";
 import { CreateProjectRequestBody } from "./dto/create-project.request";
 import { CloneProjectRequestParams } from "./dto/clone-project.request";
 import { Project } from "./types";
+import { GetProjectJobStatusRequestParams } from "./dto/get-project-job-status.request";
 
 export const deploymentController = {
   async createProject(req: Request, res: Response<ApiResponse<Project>>) {
@@ -40,6 +45,19 @@ export const deploymentController = {
     return res.json({
       data,
       message: "Project cloned successfully",
+      status: "success",
+      timestamp: new Date(),
+    });
+  },
+
+  async getProjectJobStatus(req: Request, res: Response) {
+    const { jobId } = req.params as unknown as GetProjectJobStatusRequestParams;
+    const userId = req.user!.sub;
+    const data = await getProjectJobStatusService.getStatus({ jobId, userId });
+
+    return res.json({
+      data,
+      message: "Job status retrieved successfully",
       status: "success",
       timestamp: new Date(),
     });

@@ -1,0 +1,23 @@
+info:
+  name: Get Job Status
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/deployments/jobs/:jobId"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: jobId
+      value: 01a17db4-d594-7235-81ae-6682fcef6fb0
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -29,8 +29,8 @@ export type ProjectJob = {
   jobId: string;
   userId: string;
   projectId: string;
-  status?: ProjectJobStatus;
-  currentStage?: ProjectJobStages;
+  status?: ProjectJobStatus | null;
+  currentStage?: ProjectJobStages | null;
   message?: string;
 };
 

@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "email":"testuser1@gmail.com",
-        "code":"165900"
+        "code":"404202"
       }
   auth: inherit
 

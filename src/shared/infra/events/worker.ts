@@ -1,7 +1,6 @@
-import { Worker as BullWorker, Job, Processor } from "bullmq";
+import { Worker as BullWorker, Job, Processor, WorkerOptions } from "bullmq";
 import { config } from "src/shared/config/config";
 import { JobName, JobPayloadType, QueueName } from "./queue-registry";
-import { WorkerOptions } from "node:cluster";
 import { logger } from "src/shared/logger";
 import { startEmailWorker } from "src/shared/workers/email.worker";
 
@@ -14,7 +13,7 @@ export type JobHandler<
   TJobName extends JobName<TQueueName>,
 > = (
   payload: JobPayloadType<TQueueName, TJobName>,
-  job: { id: string; attemptsMade: number },
+  job: { id: string; attemptsMade: number; attempts: number },
 ) => Promise<void>;
 
 /**
@@ -55,6 +54,7 @@ export function createWorker<TQueueName extends QueueName>(
     await handler(job.data as any, {
       id: job.id!,
       attemptsMade: job.attemptsMade,
+      attempts: job.opts.attempts ?? 1,
     });
   };
 
@@ -80,7 +80,10 @@ export function createWorker<TQueueName extends QueueName>(
   return worker;
 }
 
-export function startAllWorkers() {
-  const workers = [startEmailWorker()];
+export function startAllWorkers(additionalWorkers: (() => BullWorker)[] = []) {
+  const workers = [
+    startEmailWorker(),
+    ...additionalWorkers.map((start) => start()),
+  ];
   return workers;
 }

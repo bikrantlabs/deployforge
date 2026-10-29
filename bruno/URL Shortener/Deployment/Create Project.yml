@@ -14,7 +14,7 @@ http:
     data: |-
       {
         "cloneUrl":"https://github.com/jstibenpb/nodejs-express-template",
-        "projectName":"First Project"
+        "projectName":"Third Project"
       }
   auth: inherit
 
