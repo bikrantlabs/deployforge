@@ -12,6 +12,7 @@ import {
   InvalidCodeError,
   InvalidCredentialsError,
   NotFoundError,
+  RateLimitError,
   UnauthorizedError,
   UserAlreadyVerifiedError,
   UserNotVerifiedError,
@@ -22,7 +23,6 @@ import { generateVerificationCode } from "../utils/verification-code";
 import { config } from "src/shared/config/config";
 import { authEvents } from "../events/auth.events";
 import { hashEmail } from "../utils/hash-email";
-import { RateLimitError } from "bullmq";
 
 const logger = createLogger("Auth Service");
 
