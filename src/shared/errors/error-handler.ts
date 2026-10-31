@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import { AppError, ValidationError, InternalServerError } from "./app-error";
+import {
+  AppError,
+  ValidationError,
+  InternalServerError,
+  RateLimitError,
+} from "./app-error";
 import { createLogger } from "../logger";
 
 const logger = createLogger("error-handler");
@@ -21,6 +26,31 @@ function handleZodError(err: ZodError): ValidationError {
   return new ValidationError("Validation failed", fields);
 }
 
+function setRateLimitHeaders(res: Response, err: AppError): void {
+  if (!(err instanceof RateLimitError)) {
+    return;
+  }
+
+  const retryAfterSeconds =
+    err.retryAfterSeconds ?? err.timeInSeconds ?? 0;
+
+  if (!retryAfterSeconds || retryAfterSeconds <= 0) {
+    return;
+  }
+
+  const resetEpochSeconds = Math.ceil(Date.now() / 1000 + retryAfterSeconds);
+
+  res.setHeader("Retry-After", String(retryAfterSeconds));
+  res.setHeader("retry-after", String(retryAfterSeconds));
+  res.setHeader("x-retry-after", String(retryAfterSeconds));
+  res.setHeader("X-RateLimit-Reset", String(resetEpochSeconds));
+  res.setHeader("x-ratelimit-reset", String(resetEpochSeconds));
+  res.setHeader("X-RateLimit-Limit", String(retryAfterSeconds));
+  res.setHeader("x-ratelimit-limit", String(retryAfterSeconds));
+  res.setHeader("X-RateLimit-Remaining", "0");
+  res.setHeader("x-ratelimit-remaining", "0");
+}
+
 /**
  * Formats the error response sent to the client.
  * Non-operational errors get a generic message — never leak stack traces.
@@ -33,6 +63,12 @@ function formatErrorResponse(err: AppError, includeStack: boolean) {
       message: err.isOperational ? err.message : "Something went wrong",
     },
   };
+
+  if (err instanceof RateLimitError) {
+    (body.error as Record<string, unknown>).retryAfterSeconds =
+      err.retryAfterSeconds;
+    (body.error as Record<string, unknown>).timeInSeconds = err.timeInSeconds;
+  }
 
   // Include field errors for validation failures
   if (err instanceof ValidationError && err.fields) {
@@ -84,6 +120,7 @@ export function errorHandler(
     );
   }
 
+  setRateLimitHeaders(res, appError);
   res.status(appError.statusCode).json(formatErrorResponse(appError, isDev));
 }
 
