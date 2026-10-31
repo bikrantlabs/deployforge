@@ -49,6 +49,10 @@ export const createAuthService = (deps: {
       logger.info("AUTH SERVICE HIT");
       const existing = await userRepository.findByEmail(data.email);
       if (existing) {
+        if (!existing.isEmailVerified) {
+          await service.sendVerificationEmail(existing.email);
+          return toPublicUser(existing);
+        }
         throw new ConflictError("An account with this email already exists.");
       }
 
