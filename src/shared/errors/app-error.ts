@@ -59,7 +59,7 @@ export class TokenRevokedError extends AppError {
     super("Token has been revoked", 401, "TOKEN_REVOKED");
   }
 }
-// ─── Verification Code Error ──────────────────────────────────────────────────────────
+// ─── Verification Code Error ─────────────────────────────────────────────────────[...]
 export class InvalidCodeError extends AppError {
   constructor() {
     super("Invalid verification code", 404, "INVALID_CODE");
@@ -72,7 +72,7 @@ export class UserAlreadyVerifiedError extends AppError {
   }
 }
 
-// ─── Resource errors ──────────────────────────────────────────────────────────
+// ─── Resource errors ───────────────────────────────────────────────────────��[...]
 
 export class NotFoundError extends AppError {
   constructor(resource = "Resource") {
@@ -86,7 +86,7 @@ export class ConflictError extends AppError {
   }
 }
 
-// ─── Validation errors ────────────────────────────────────────────────────────
+// ─── Validation errors ───────────────────────────────────────────────────────[...]
 
 export class ValidationError extends AppError {
   public readonly fields?: Record<string, string[]>;
@@ -97,18 +97,21 @@ export class ValidationError extends AppError {
   }
 }
 
-// ─── Rate limiting ────────────────────────────────────────────────────────────
+// ─── Rate limiting ────────────────────────────────────────────────────────[...]
 
 export class RateLimitError extends AppError {
-  constructor(message = "Too many requests, please try again later") {
+  public readonly retryAfterSeconds?: number;
+
+  constructor(message = "Too many requests, please try again later", retryAfterSeconds?: number) {
     super(message, 429, "RATE_LIMIT_EXCEEDED");
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
-// ─── Internal errors ──────────────────────────────────────────────────────────
+// ─── Internal errors ───────────────────────────────────────────────────────�[...]
 
 export class InternalServerError extends AppError {
-  constructor(message = "Internal server error") {
+  constructor(message: string) {
     super(message, 500, "INTERNAL_SERVER_ERROR", false);
   }
 }
