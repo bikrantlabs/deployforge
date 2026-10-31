@@ -50,13 +50,11 @@ export const createAuthService = (deps: {
       const existing = await userRepository.findByEmail(data.email);
       if (existing) {
         if (!existing.isEmailVerified) {
-          await service.sendVerificationEmail(existing.email);
-          return toPublicUser(existing);
+          throw new UserNotVerifiedError();
         }
         throw new ConflictError("An account with this email already exists.");
       }
 
-      // Hash password
       const passwordHash = await hashPassword(data.password);
 
       const user = await userRepository.create({
@@ -64,11 +62,9 @@ export const createAuthService = (deps: {
         passwordHash: passwordHash,
       });
 
-      //
-
       const verificationCode = generateVerificationCode();
 
-      service.cacheCode(user.email, verificationCode);
+      await service.cacheCode(user.email, verificationCode);
 
       logger.info({ userId: user.id }, "User registered");
       return toPublicUser(user);
