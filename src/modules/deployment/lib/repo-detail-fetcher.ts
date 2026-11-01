@@ -26,45 +26,18 @@ function stripGitSuffix(segment: string): string {
   return segment.replace(/\.git$/i, "");
 }
 
-function parseCloneUrl(cloneUrl: string): ParsedCloneUrl | null {
-  console.log("CLONE URL", cloneUrl);
-  const trimmed = cloneUrl.trim();
-  if (!trimmed) {
-    return null;
-  }
-
-  const scpStyle = /^[\w.-]+@([^:/]+):(.+)$/.exec(trimmed);
-  const hostAndPath = scpStyle
-    ? `${scpStyle[1]}/${scpStyle[2]}`
-    : trimmed.replace(/^[a-z][\w+.-]*:\/\//i, "").replace(/^[^/@]*@/, "");
-
-  const segments = hostAndPath
-    .split("/")
-    .map(stripGitSuffix)
-    .filter((segment) => segment.length > 0);
-
-  const provider = SUPPORTED_HOSTS.get(segments[0]?.toLowerCase() ?? "");
-  if (!provider || segments.length < 3) {
-    return null;
-  }
-
-  return {
-    provider,
-    owner: segments.slice(1, -1).join("/"),
-    repo: segments[segments.length - 1]!,
-  };
-}
-
 type GithubRepoResponse = {
   id: number;
   full_name: string;
   clone_url: string;
+  name: string;
 };
 
 type GitlabProjectResponse = {
   id: number;
   path_with_namespace: string;
   http_url_to_repo: string;
+  name: string;
 };
 
 export class HttpRepoDetailFetcher {
@@ -75,7 +48,7 @@ export class HttpRepoDetailFetcher {
     this.GITLAB_TOKEN = gitlabToken;
   }
   async fetch(cloneUrl: string): Promise<RepoDetail | null> {
-    const parsed = parseCloneUrl(cloneUrl);
+    const parsed = this.parseCloneUrl(cloneUrl);
     console.log({ parsed });
     if (!parsed) {
       // TODO:  Return with error message instead: unable to parse url, so the client can throw it's own error.
@@ -105,6 +78,7 @@ export class HttpRepoDetailFetcher {
       repoId: body.id,
       fullName: body.full_name,
       sourceUrl: body.clone_url,
+      repoName: body.name,
     };
   }
 
@@ -132,6 +106,35 @@ export class HttpRepoDetailFetcher {
       repoId: body.id,
       fullName: body.path_with_namespace,
       sourceUrl: body.http_url_to_repo,
+      repoName: body.name,
+    };
+  }
+
+  parseCloneUrl(cloneUrl: string): ParsedCloneUrl | null {
+    const trimmed = cloneUrl.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const scpStyle = /^[\w.-]+@([^:/]+):(.+)$/.exec(trimmed);
+    const hostAndPath = scpStyle
+      ? `${scpStyle[1]}/${scpStyle[2]}`
+      : trimmed.replace(/^[a-z][\w+.-]*:\/\//i, "").replace(/^[^/@]*@/, "");
+
+    const segments = hostAndPath
+      .split("/")
+      .map(stripGitSuffix)
+      .filter((segment) => segment.length > 0);
+
+    const provider = SUPPORTED_HOSTS.get(segments[0]?.toLowerCase() ?? "");
+    if (!provider || segments.length < 3) {
+      return null;
+    }
+
+    return {
+      provider,
+      owner: segments.slice(1, -1).join("/"),
+      repo: segments[segments.length - 1]!,
     };
   }
 

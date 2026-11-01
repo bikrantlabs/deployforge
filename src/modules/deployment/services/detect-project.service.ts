@@ -1,5 +1,5 @@
 import { NotFoundError } from "src/shared/errors/app-error";
-import { ProjectConfigDetector } from "../types";
+import { ProjectConfigDetector, ProjectDetection } from "../types";
 import { WorkspaceProvisioner } from "../lib/workspace-provisioner";
 import { createLogger } from "src/shared/logger";
 import {
@@ -12,6 +12,18 @@ import { generateUUID } from "src/shared/utils/uuid-generator";
 
 const logger = createLogger("detect-project");
 
+export type DetectProjectService = {
+  detectProject(input: {
+    projectId: string;
+    userId: string;
+    jobId?: string;
+  }): Promise<{
+    projectId: string;
+    projectName: string;
+    detection: ProjectDetection;
+  }>;
+  detectTemp(destinationPath: string): Promise<ProjectDetection>;
+};
 export const createDetectProjectService = (deps: {
   projectRepo: ProjectRepository;
   projectDetectionResultRepo: ProjectDetectionResultRepository;
@@ -19,7 +31,7 @@ export const createDetectProjectService = (deps: {
   withTransaction: TransactionRunner;
   workspace: Pick<WorkspaceProvisioner, "destinationFor">;
   detector: ProjectConfigDetector;
-}) => {
+}): DetectProjectService => {
   const {
     projectRepo,
     projectDetectionResultRepo,
@@ -85,6 +97,9 @@ export const createDetectProjectService = (deps: {
         projectName: project.projectName,
         detection,
       };
+    },
+    async detectTemp(destinationPath) {
+      return await detector.detect(destinationPath);
     },
   };
 };

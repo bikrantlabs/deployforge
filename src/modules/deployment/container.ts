@@ -18,6 +18,7 @@ import { SpawnCommandRunner } from "src/shared/utils/command-runner";
 import { createListProjectsService } from "./services/list-projects.service";
 import { createDetectWorker } from "./workers/detect.worker";
 import { createProjectDetectionResultRepository } from "./repo/project-detection-result.repo";
+import { createInspectProjectService } from "./services/inspect-project.service";
 
 const repoDetailFetcher = new HttpRepoDetailFetcher(config.GITHUB_TOKEN);
 const pool = getPool();
@@ -69,6 +70,13 @@ const detectProjectService = createDetectProjectService({
   detector: projectConfigDetector,
 });
 
+const inspectProjectService = createInspectProjectService({
+  repoDetailFetcher,
+  projectRepo,
+  detectProjectService,
+  cloneProjectService,
+});
+
 export const startOutboxRelay = () => outboxRelay.start();
 export const startCloneWorker = () =>
   createCloneWorker({ projectJobRepo, cloneProjectService });
@@ -81,4 +89,5 @@ export {
   cloneProjectService,
   getProjectJobStatusService,
   detectProjectService,
+  inspectProjectService,
 };

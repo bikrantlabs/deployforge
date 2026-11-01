@@ -8,6 +8,11 @@ import { cloneProjectRequestSchema } from "./dto/clone-project.request";
 import { getProjectJobStatusRequestSchema } from "./dto/get-project-job-status.request";
 
 export const deploymentRouter = Router();
+deploymentRouter.post(
+  "/inspect-project",
+  authenticate,
+  asyncHandler(deploymentController.inspectProject),
+);
 
 deploymentRouter.get(
   "/projects",

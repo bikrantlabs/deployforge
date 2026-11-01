@@ -1,16 +1,11 @@
 import { createWorker } from "src/shared/infra/events/worker";
 import { logger } from "src/shared/logger";
 import { ProjectJobRepository } from "../repo/types";
+import { DetectProjectService } from "../services/detect-project.service";
 
 export const createDetectWorker = (deps: {
   projectJobRepo: ProjectJobRepository;
-  detectProjectService: {
-    detectProject(input: {
-      projectId: string;
-      userId: string;
-      jobId?: string;
-    }): Promise<unknown>;
-  };
+  detectProjectService: DetectProjectService;
 }) => {
   const { projectJobRepo, detectProjectService } = deps;
 

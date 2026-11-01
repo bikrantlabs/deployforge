@@ -13,6 +13,10 @@ export type FindProjectByNameData = {
   userId: string;
 };
 
+export type FindProjectBySourceUrlData = {
+  userId: string;
+  sourceUrl: string;
+};
 export type FindProjectByIdData = {
   projectId: string;
   userId: string;
@@ -22,6 +26,9 @@ export type ProjectRepository = {
   create(data: CreateProjectData, client: PoolClient): Promise<void>;
   listForUser(userId: string): Promise<Project[]>;
   findUniqueByName(data: FindProjectByNameData): Promise<Project | null>;
+  findUniqueBySourceUrl(
+    data: FindProjectBySourceUrlData,
+  ): Promise<Project | null>;
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
 };
 

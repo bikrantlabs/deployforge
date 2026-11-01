@@ -9,6 +9,38 @@ import {
 } from "../repo/types";
 import { Outbox } from "../types";
 import { generateUUID } from "src/shared/utils/uuid-generator";
+import { mkdir, rm } from "node:fs/promises";
+import path from "node:path";
+import { isProtectedPath, tempCloneRoot } from "src/shared/utils/path-utils";
+
+export type CloneProjectService = {
+  cloneProject(input: {
+    projectId: string;
+    userId: string;
+    jobId?: string;
+  }): Promise<{
+    projectId: string;
+    projectName: string;
+    destinationPath: string;
+  }>;
+  /**
+   * Clones the project into a temporary location under /tmp/.deployforge/
+   * and returns the full directory path as a string.
+   * Path: /tmp/.deployforge/:userId/:repoName
+   */
+  cloneProjectTemp(input: {
+    repoName: string;
+    userId: string;
+    sourceUrl: string;
+  }): Promise<string>;
+  /**
+   * Deletes a previously cloned temporary project directory.
+   * Prevents deletion of any path that falls inside the main .deployforge
+   * workspace (~/.deployforge) or any other path under /tmp (except the
+   * managed /tmp/.deployforge temp clones).
+   */
+  removeClonedProject(directoryPath: string): Promise<void>;
+};
 
 export const createCloneProjectService = (deps: {
   projectRepo: ProjectRepository;
@@ -17,7 +49,7 @@ export const createCloneProjectService = (deps: {
   withTransaction?: TransactionRunner;
   workspace: WorkspaceProvisioner;
   repoCloner: GitSourceCloner;
-}) => {
+}): CloneProjectService => {
   const {
     projectRepo,
     projectJobRepo,
@@ -43,7 +75,7 @@ export const createCloneProjectService = (deps: {
       }
 
       const destinationPath = await workspace.prepare(project);
-      await repoCloner.clone(project, destinationPath);
+      await repoCloner.clone(project.sourceUrl, destinationPath);
 
       // The public clone endpoint intentionally omits jobId, so manual/API
       // cloning remains synchronous and does not enqueue detection.
@@ -86,6 +118,33 @@ export const createCloneProjectService = (deps: {
         projectName: project.projectName,
         destinationPath,
       };
+    },
+    async cloneProjectTemp(input: {
+      repoName: string;
+      userId: string;
+      sourceUrl: string;
+    }): Promise<string> {
+      const tempRoot = tempCloneRoot();
+      const destination = path.resolve(tempRoot, input.userId, input.repoName);
+
+      // Guard against userId/repoName containing path traversal segments.
+      if (!destination.startsWith(tempRoot + "/")) {
+        throw new Error("Invalid temporary clone destination.");
+      }
+
+      await mkdir(destination, { recursive: true });
+      await repoCloner.clone(input.sourceUrl, destination);
+
+      return destination;
+    },
+    async removeClonedProject(directoryPath: string): Promise<void> {
+      const resolved = path.resolve(directoryPath);
+
+      if (isProtectedPath(resolved)) {
+        throw new Error("Deletion is not allowed for this path.");
+      }
+
+      await rm(resolved, { recursive: true, force: true });
     },
   };
 };

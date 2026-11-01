@@ -6,6 +6,7 @@ import {
   getProjectJobStatusService,
   detectProjectService,
   listProjectsService,
+  inspectProjectService,
 } from "./container";
 import { CreateProjectRequestBody } from "./dto/create-project.request";
 import { CloneProjectRequestParams } from "./dto/clone-project.request";
@@ -88,6 +89,22 @@ export const deploymentController = {
     return res.json({
       data,
       message: "Project detected successfully",
+      status: "success",
+      timestamp: new Date(),
+    });
+  },
+
+  async inspectProject(req: Request, res: Response) {
+    const input = req.body as { cloneUrl: string };
+    const userId = req.user!.sub;
+    const data = await inspectProjectService.inspectProject({
+      cloneUrl: input.cloneUrl,
+      userId,
+    });
+
+    return res.json({
+      data,
+      message: "Project imported successfully",
       status: "success",
       timestamp: new Date(),
     });

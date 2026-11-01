@@ -2,7 +2,6 @@ import { execFile } from "node:child_process";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
-import { Project } from "../types";
 
 const execFileAsync = promisify(execFile);
 
@@ -18,13 +17,13 @@ export class SourceCloneError extends Error {
 }
 
 export class GitSourceCloner {
-  async clone(project: Project, destination: string): Promise<void> {
+  async clone(sourceUrl: string, destination: string): Promise<void> {
     await this.clearDestination(destination);
 
     try {
       await execFileAsync(
         "git",
-        ["clone", "--depth=1", "--", project.sourceUrl, destination],
+        ["clone", "--depth=1", "--", sourceUrl, destination],
         {
           timeout: CLONE_TIMEOUT_MS,
           maxBuffer: MAX_OUTPUT_BYTES,
@@ -36,12 +35,9 @@ export class GitSourceCloner {
     } catch (error) {
       const stderr = (error as { stderr?: string }).stderr?.trim();
       const detail = stderr ? `: ${stderr.slice(0, STDERR_EXCERPT)}` : "";
-      throw new SourceCloneError(
-        `Failed to clone ${project.sourceUrl}${detail}`,
-        {
-          cause: error,
-        },
-      );
+      throw new SourceCloneError(`Failed to clone ${sourceUrl}${detail}`, {
+        cause: error,
+      });
     }
   }
 

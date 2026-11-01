@@ -2,6 +2,7 @@ import { Pool, PoolClient } from "pg";
 import {
   CreateProjectData,
   FindProjectByNameData,
+  FindProjectBySourceUrlData,
   ProjectRepository,
 } from "./types";
 import { DbProject } from "src/shared/db.types";
@@ -47,6 +48,18 @@ export const createProjectRepository = (pool: Pool): ProjectRepository => {
       const { rows } = await pool.query<DbProject>(
         "SELECT * FROM projects WHERE user_id = $1 AND name = $2",
         [data.userId, data.projectName],
+      );
+      if (!rows[0]) {
+        return null;
+      }
+      return toPublicProject(rows[0]);
+    },
+    async findUniqueBySourceUrl(
+      data: FindProjectBySourceUrlData,
+    ): Promise<Project | null> {
+      const { rows } = await pool.query<DbProject>(
+        "SELECT * FROM projects WHERE user_id = $1 AND source_url = $2",
+        [data.userId, data.sourceUrl],
       );
       if (!rows[0]) {
         return null;

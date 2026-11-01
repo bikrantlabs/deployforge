@@ -1,16 +1,11 @@
 import { createWorker } from "src/shared/infra/events/worker";
 import { logger } from "src/shared/logger";
 import { ProjectJobRepository } from "../repo/types";
+import { CloneProjectService } from "../services/clone-project.service";
 
 export const createCloneWorker = (deps: {
   projectJobRepo: ProjectJobRepository;
-  cloneProjectService: {
-    cloneProject(input: {
-      projectId: string;
-      userId: string;
-      jobId?: string;
-    }): Promise<unknown>;
-  };
+  cloneProjectService: CloneProjectService;
 }) => {
   const { projectJobRepo, cloneProjectService } = deps;
 
