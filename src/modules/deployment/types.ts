@@ -1,6 +1,10 @@
 import { DetectionLog } from "src/shared/railpack/errors";
 
-export type ProjectJobStages = "cloning" | "building" | "deploying";
+export type ProjectJobStages =
+  | "cloning"
+  | "detecting"
+  | "building"
+  | "deploying";
 export type ProjectJobStatus =
   | "queued"
   | "running"
@@ -9,6 +13,7 @@ export type ProjectJobStatus =
   | "canceled";
 export type ProjectJobTopics =
   | "clone.requested"
+  | "detect.requested"
   | "build.requested"
   | "deploy.requested"
   | "deploy.completed"

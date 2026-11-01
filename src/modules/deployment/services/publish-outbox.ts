@@ -5,7 +5,10 @@ export const publishOutbox = async (
   message: OutboxMessage,
   projectJobRepo: ProjectJobRepository,
 ): Promise<void> => {
-  if (message.topic !== "clone.requested") {
+  if (
+    message.topic !== "clone.requested" &&
+    message.topic !== "detect.requested"
+  ) {
     throw new Error(`Unsupported outbox topic: ${message.topic}`);
   }
 
@@ -25,13 +28,23 @@ export const publishOutbox = async (
     return;
   }
 
-  await getQueue("clone").add(
-    "clone-project",
-    { jobId: message.jobId, projectId, userId },
-    {
-      jobId: message.jobId,
-      attempts: 3,
-      backoff: { type: "exponential", delay: 1_000 },
-    },
-  );
+  const options = {
+    jobId: message.jobId,
+    attempts: 3,
+    backoff: { type: "exponential" as const, delay: 1_000 },
+  };
+
+  if (message.topic === "clone.requested") {
+    await getQueue("clone").add(
+      "clone-project",
+      { jobId: message.jobId, projectId, userId },
+      options,
+    );
+  } else {
+    await getQueue("detect").add(
+      "detect-project",
+      { jobId: message.jobId, projectId, userId },
+      options,
+    );
+  }
 };

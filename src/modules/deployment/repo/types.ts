@@ -1,5 +1,5 @@
 import { PoolClient } from "pg";
-import { Outbox, Project, ProjectJob } from "../types";
+import { Outbox, Project, ProjectDetection, ProjectJob } from "../types";
 
 export type CreateProjectData = {
   projectId: string;
@@ -25,6 +25,19 @@ export type ProjectRepository = {
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
 };
 
+export type CreateProjectDetectionResult = {
+  detectionId: string;
+  projectId: string;
+  detection: ProjectDetection;
+};
+
+export type ProjectDetectionResultRepository = {
+  create(
+    result: CreateProjectDetectionResult,
+    client: PoolClient,
+  ): Promise<void>;
+};
+
 export type ProjectJobRepository = {
   createJob(job: ProjectJob, client: PoolClient): Promise<void>;
   findStatusForUser(input: {
@@ -32,13 +45,17 @@ export type ProjectJobRepository = {
     userId: string;
   }): Promise<ProjectJobStatusView | null>;
   markQueued(jobId: string): Promise<"queued" | "terminal" | "missing">;
-  claimQueued(jobId: string): Promise<boolean>;
+  claimQueued(
+    jobId: string,
+    currentStage?: ProjectJob["currentStage"],
+  ): Promise<boolean>;
   getStatus(jobId: string): Promise<ProjectJob["status"] | null>;
   setStatus(input: {
     jobId: string;
     status: ProjectJob["status"];
     currentStage?: ProjectJob["currentStage"];
     message?: string | null;
+    client?: PoolClient;
   }): Promise<boolean>;
 };
 

@@ -13,8 +13,8 @@ http:
     type: json
     data: |-
       {
-        "cloneUrl":"https://github.com/jstibenpb/nodejs-express-template",
-        "projectName":"Third Project"
+        "cloneUrl":"https://github.com/bikrantlabs/deployforge-web",
+        "projectName":"Deployforge-Web-III"
       }
   auth: inherit
 

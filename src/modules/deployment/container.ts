@@ -16,11 +16,14 @@ import { createDetectProjectService } from "./services/detect-project.service";
 import { RailpackConfigDetector } from "src/shared/railpack/railpack-config-detector";
 import { SpawnCommandRunner } from "src/shared/utils/command-runner";
 import { createListProjectsService } from "./services/list-projects.service";
+import { createDetectWorker } from "./workers/detect.worker";
+import { createProjectDetectionResultRepository } from "./repo/project-detection-result.repo";
 
 const repoDetailFetcher = new HttpRepoDetailFetcher(config.GITHUB_TOKEN);
 const pool = getPool();
 const projectRepo = createProjectRepository(pool);
 const projectJobRepo = createProjectJobRepo(pool);
+const projectDetectionResultRepo = createProjectDetectionResultRepository();
 const outboxRepo = createOutboxRepo(pool);
 const outboxRelay = createOutboxRelay({
   outboxRepo,
@@ -46,6 +49,9 @@ const listProjectsService = createListProjectsService(projectRepo);
 
 const cloneProjectService = createCloneProjectService({
   projectRepo,
+  projectJobRepo,
+  outboxRepo,
+  withTransaction,
   workspace: workspaceProvisioner,
   repoCloner,
 });
@@ -56,6 +62,9 @@ const getProjectJobStatusService = createGetProjectJobStatusService({
 
 const detectProjectService = createDetectProjectService({
   projectRepo,
+  projectDetectionResultRepo,
+  projectJobRepo,
+  withTransaction,
   workspace: workspaceProvisioner,
   detector: projectConfigDetector,
 });
@@ -63,6 +72,8 @@ const detectProjectService = createDetectProjectService({
 export const startOutboxRelay = () => outboxRelay.start();
 export const startCloneWorker = () =>
   createCloneWorker({ projectJobRepo, cloneProjectService });
+export const startDetectWorker = () =>
+  createDetectWorker({ projectJobRepo, detectProjectService });
 
 export {
   createProjectService,

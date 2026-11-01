@@ -69,13 +69,15 @@ export const createProjectJobRepo = (pool: Pool): ProjectJobRepository => ({
     return existingStatus === "queued" ? "queued" : "terminal";
   },
 
-  async claimQueued(jobId) {
+  async claimQueued(jobId, currentStage = "cloning") {
     const { rowCount } = await pool.query(
       `UPDATE project_jobs
-       SET status = 'running', current_stage = 'cloning', message = NULL, updated_at = NOW()
-       WHERE id = $1 AND status IN ('queued', 'running')
+       SET status = 'running', current_stage = $2, message = NULL, updated_at = NOW()
+       WHERE id = $1
+         AND status IN ('queued', 'running')
+         AND (current_stage IS NULL OR current_stage = $2)
        RETURNING id`,
-      [jobId],
+      [jobId, currentStage],
     );
     return Boolean(rowCount);
   },
@@ -88,8 +90,9 @@ export const createProjectJobRepo = (pool: Pool): ProjectJobRepository => ({
     return rows[0]?.status ?? null;
   },
 
-  async setStatus({ jobId, status, currentStage, message }) {
-    const { rowCount } = await pool.query(
+  async setStatus({ jobId, status, currentStage, message, client }) {
+    const executor = client ?? pool;
+    const { rowCount } = await executor.query(
       `UPDATE project_jobs
        SET status = $2, current_stage = $3, message = $4, updated_at = NOW()
        WHERE id = $1 AND status = 'running'`,

@@ -10,6 +10,7 @@ import { ensureMiseCacheLink } from "./shared/railpack/ensure-mise-cache-link";
 import {
   startOutboxRelay,
   startCloneWorker,
+  startDetectWorker,
 } from "./modules/deployment/container";
 
 async function start() {
@@ -22,7 +23,7 @@ async function start() {
     await connectRedis();
 
     initQueues();
-    const workers = startAllWorkers([startCloneWorker]);
+    const workers = startAllWorkers([startCloneWorker, startDetectWorker]);
     registerAuthEventListener();
     const stopOutboxRelay = startOutboxRelay();
 

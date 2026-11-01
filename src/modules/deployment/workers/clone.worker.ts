@@ -8,6 +8,7 @@ export const createCloneWorker = (deps: {
     cloneProject(input: {
       projectId: string;
       userId: string;
+      jobId?: string;
     }): Promise<unknown>;
   };
 }) => {
@@ -22,6 +23,7 @@ export const createCloneWorker = (deps: {
         const status = await projectJobRepo.getStatus(payload.jobId);
         if (
           status === "running" ||
+          status === "queued" ||
           status === "completed" ||
           status === "failed" ||
           status === "canceled"
@@ -33,26 +35,16 @@ export const createCloneWorker = (deps: {
           return;
         }
         throw new Error(
-          `Unable to claim project job ${payload.jobId} (status: ${status ?? "missing"})`,
+          `Unable to claim project job ${payload.jobId} (status: ${String(status)})`,
         );
       }
 
       try {
         await cloneProjectService.cloneProject({
+          jobId: payload.jobId,
           projectId: payload.projectId,
           userId: payload.userId,
         });
-
-        const completed = await projectJobRepo.setStatus({
-          jobId: payload.jobId,
-          status: "completed",
-          currentStage: "cloning",
-        });
-        if (!completed) {
-          throw new Error(`Unable to complete project job ${payload.jobId}`);
-        }
-
-        // TODO:
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);

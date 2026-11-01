@@ -42,7 +42,7 @@ export const queues = {} as {
 
 // Initialize all queues
 export function initQueues() {
-  const queueNames: QueueName[] = ["auth_email", "clone"];
+  const queueNames: QueueName[] = ["auth_email", "clone", "detect"];
   const queueRegistry = queues as Record<QueueName, TypedQueue<QueueName>>;
 
   for (const name of queueNames) {

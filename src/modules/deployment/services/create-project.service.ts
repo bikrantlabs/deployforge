@@ -49,9 +49,7 @@ export const createCreateProjectService = (deps: {
         sourceUrl: input.cloneUrl,
         userId: input.userId,
       };
-      // I decided to use transactional-outbox-pattern: Creating a projectJob row and a outbox which tracks the event.
-      // the poller or relay then takes the unsent rows from outbox, and enqueues the job to the queue ("clone-queue")
-      // the worker listening to clone-queue will use clone-project-service for cloning as background job.
+
       const job: ProjectJob = {
         jobId: generateUUID(),
         projectId: project.projectId,
