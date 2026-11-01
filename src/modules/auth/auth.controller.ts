@@ -95,7 +95,7 @@ export const authController = {
 
     res.status(200).json({
       status: "success",
-      message: "User logged in successfully",
+      message: "Tokens refreshed",
       timestamp: new Date(),
       data: result,
     });
