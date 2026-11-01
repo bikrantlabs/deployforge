@@ -13,7 +13,7 @@ export const createTokenRepository = (pool: Pool): TokenRepository => {
     create: async (data: CreateTokenData) => {
       const { userId, expiresAt, tokenHash, id, ipAddress, userAgent } = data;
       await pool.query(
-        "INSERT INTO refresh_tokens(id, user_id, token_hash, expires_at, ip_address, user_agent) VALUES($1, $2, $3, $4, $5, $6) ",
+        "INSERT INTO refresh_tokens(id, user_id, token_hash, expires_at, ip_address, user_agent) VALUES($1, $2, $3, $4, $5, $6)",
         [id, userId, tokenHash, expiresAt, ipAddress, userAgent],
       );
     },
@@ -39,27 +39,27 @@ export const createTokenRepository = (pool: Pool): TokenRepository => {
     },
     revokeById: async (id: string) => {
       await pool.query(
-        "UPDATE FROM refresh_tokens SET revoked_at = $1 WHERE id = $2",
+        "UPDATE refresh_tokens SET revoked_at = $1 WHERE id = $2",
         [new Date(), id],
       );
     },
 
     delete: async (id: string) => {
-      await pool.query("DELETE FROM refresh_tokens WHERE id=$1", [id]);
+      await pool.query("DELETE FROM refresh_tokens WHERE id = $1", [id]);
     },
     deleteExpired: async () => {
       const time = new Date(
         Date.now() - parseExpiryToMs(config.REFRESH_TOKEN_EXPIRY),
       );
-      await pool.query("DELETE FROM refresh_tokens WHERE expires_at = $1", [
+      await pool.query("DELETE FROM refresh_tokens WHERE expires_at <= $1", [
         time,
       ]);
     },
 
     revokeAllForUser: async (userId: string) => {
       await pool.query(
-        "UPDATE FROM refresh_tokens SET revoked_at = $1 WHERE user_id = $2 AND revoked_at = $3",
-        [new Date(), userId, null],
+        "UPDATE refresh_tokens SET revoked_at = $1 WHERE user_id = $2 AND revoked_at IS NULL",
+        [new Date(), userId],
       );
     },
   };
