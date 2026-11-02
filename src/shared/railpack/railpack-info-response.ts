@@ -1,30 +1,12 @@
 import {
+  DetectionLog,
   ProjectDetection,
   ResolvedPackage,
-} from "src/modules/deployment/types.js";
-import { DetectionLog, MalformedRailpackOutputError } from "./errors.js";
+} from "src/modules/deployment/project-detection.types.js";
+import { MalformedRailpackOutputError } from "./errors.js";
+import { isExecCommand, RailpackPlanOutput } from "./railpack-plan.types.js";
 
-/**
- * Raw shape of `railpack info --format json`. Fields are intentionally loose
- * (`unknown`): Railpack evolves its output between versions, so the adapter
- * coerces defensively instead of trusting the wire format.
- */
-export type RailpackInfoResponse = {
-  success?: unknown;
-  railpackVersion?: unknown;
-  detectedProviders?: unknown;
-  metadata?: unknown;
-  resolvedPackages?: unknown;
-  logs?: unknown;
-  plan?: {
-    deploy?: {
-      startCommand?: unknown;
-      variables?: unknown;
-    };
-  };
-};
-
-export function parseRailpackInfo(stdout: string): RailpackInfoResponse {
+export function parseRailpackInfo(stdout: string): RailpackPlanOutput {
   let parsed: unknown;
   try {
     parsed = JSON.parse(stdout);
@@ -41,14 +23,14 @@ export function parseRailpackInfo(stdout: string): RailpackInfoResponse {
     );
   }
 
-  return parsed as RailpackInfoResponse;
+  return parsed as RailpackPlanOutput;
 }
 
 /**
  * Extracts the most helpful error message from a failed (`success: false`)
  * railpack info response — normally the last log entry with level "error".
  */
-export function extractFailureMessage(response: RailpackInfoResponse): string {
+export function extractFailureMessage(response: RailpackPlanOutput): string {
   const logs = toLogs(response.logs);
   const errorLog = [...logs].reverse().find((log) => log.level === "error");
 
@@ -57,19 +39,37 @@ export function extractFailureMessage(response: RailpackInfoResponse): string {
 
 /** Maps a parsed railpack info response onto the detection domain model. */
 export function toProjectDetection(
-  response: RailpackInfoResponse,
+  response: RailpackPlanOutput,
 ): ProjectDetection {
   return {
-    providers: toProviders(response),
+    detectedProviders: toProviders(response),
+    steps: toSteps(response),
     metadata: toStringRecord(response.metadata),
-    packages: toPackages(response.resolvedPackages),
+    resolvedPackages: toPackages(response.resolvedPackages),
     startCommand: toStartCommand(response),
-    variables: toStringRecord(response.plan?.deploy?.variables),
+    variables: toStringRecord(response.plan.deploy.variables),
     logs: toLogs(response.logs),
   };
 }
 
-function toProviders(response: RailpackInfoResponse): string[] {
+function toSteps(response: RailpackPlanOutput): ProjectDetection["steps"] {
+  const steps: ProjectDetection["steps"] = [];
+
+  for (const step of response.plan.steps) {
+    if (step.name !== "install" && step.name !== "build") {
+      continue;
+    }
+
+    steps.push({
+      name: step.name, // narrowed to "install" | "build" by the check above
+      commands: (step.commands ?? []).filter(isExecCommand).map((c) => c.cmd),
+    });
+  }
+
+  return steps;
+}
+
+function toProviders(response: RailpackPlanOutput): string[] {
   if (
     Array.isArray(response.detectedProviders) &&
     response.detectedProviders.every((p) => typeof p === "string")
@@ -91,8 +91,8 @@ function toProviders(response: RailpackInfoResponse): string[] {
   return [];
 }
 
-function toStartCommand(response: RailpackInfoResponse): string | null {
-  const startCommand = response.plan?.deploy?.startCommand;
+function toStartCommand(response: RailpackPlanOutput): string | null {
+  const startCommand = response.plan.deploy.startCommand;
   return typeof startCommand === "string" && startCommand !== ""
     ? startCommand
     : null;

@@ -10,11 +10,11 @@ import {
   UnsupportedProjectError,
 } from "./errors.js";
 import { CommandRunner, CommandTimeoutError } from "../utils/command-runner.js";
+import { createLogger } from "../logger.js";
 import {
   ProjectConfigDetector,
   ProjectDetection,
-} from "src/modules/deployment/types.js";
-import { createLogger } from "../logger.js";
+} from "src/modules/deployment/project-detection.types.js";
 
 export class RailpackConfigDetector implements ProjectConfigDetector {
   private readonly binary: string = "railpack";

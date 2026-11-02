@@ -1,3 +1,5 @@
+import { DetectionLog } from "src/modules/deployment/project-detection.types";
+
 export class DetectionError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
@@ -43,11 +45,5 @@ export class MalformedRailpackOutputError extends DetectionError {
     this.name = "MalformedRailpackOutputError";
   }
 }
-
-export type DetectionLog = {
-  level: string;
-  message: string;
-  docsPath?: string;
-};
 
 /** Base class for every error raised by the detection core. */

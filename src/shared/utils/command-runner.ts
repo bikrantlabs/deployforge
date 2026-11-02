@@ -93,13 +93,21 @@ export class SpawnCommandRunner implements CommandRunner {
         : undefined;
 
       child.on("error", (error) => {
-        if (timeout) clearTimeout(timeout);
-        if (forceKillTimeout) clearTimeout(forceKillTimeout);
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+        if (forceKillTimeout) {
+          clearTimeout(forceKillTimeout);
+        }
         reject(error);
       });
       child.on("close", (code) => {
-        if (timeout) clearTimeout(timeout);
-        if (forceKillTimeout) clearTimeout(forceKillTimeout);
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+        if (forceKillTimeout) {
+          clearTimeout(forceKillTimeout);
+        }
         resolve({
           exitCode: code ?? -1,
           stdout,
