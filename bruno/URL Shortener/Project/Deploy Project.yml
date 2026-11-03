@@ -1,0 +1,34 @@
+info:
+  name: Deploy Project
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/projects/deploy"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "project": {
+          "projectId": "01a1a013-6497-71c7-866a-019de2d8cb73",
+          "projectName": "deployforge-web",
+          "sourceUrl": "https://github.com/bikrantlabs/deployforge-web"
+        },
+        "envVariables": {
+          "NODE_ENV": "production",
+          "API_URL":"http://localhost:3000",
+          "SESSION_SECRET":"dPiAd/NSJ9Cla3a0DKuQ/Q2Kly2pDsBrvXmUvc8kna4="
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

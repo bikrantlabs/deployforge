@@ -1,8 +1,8 @@
 import { PoolClient } from "pg";
-import { ProjectDetectionResultRepository } from "./types";
+import { ProjectDetectionRepository } from "./types";
 
-export const createProjectDetectionResultRepository =
-  (): ProjectDetectionResultRepository => ({
+export const createProjectDetectionRepository =
+  (): ProjectDetectionRepository => ({
     async create(result, client: PoolClient) {
       await client.query(
         `INSERT INTO project_detection_results (id, project_id, detection)
@@ -11,3 +11,5 @@ export const createProjectDetectionResultRepository =
       );
     },
   });
+
+export const projectDetectionRepo = createProjectDetectionRepository();

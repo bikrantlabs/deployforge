@@ -137,7 +137,7 @@ examples:
               },
               "existing": false
             },
-            "message": "Project imported successfully",
+            "message": "Project inspected successfully",
             "status": "success",
             "timestamp": "2026-11-01T16:26:01.351Z"
           }
@@ -255,7 +255,7 @@ examples:
               },
               "existing": true
             },
-            "message": "Project imported successfully",
+            "message": "Project inspected successfully",
             "status": "success",
             "timestamp": "2026-11-01T16:26:30.340Z"
           }

@@ -1,14 +1,12 @@
 import { getPool, withTransaction } from "src/shared/infra/db";
-import {
-  cloneProject,
-  projectConfigDetector,
-  projectDetectionResultRepo,
-  projectRepo,
-  repoDetailFetcher,
-  workspaceProvisioner,
-} from "src/modules/project/container";
+import { config } from "src/shared/config/config";
+import { WorkspaceProvisioner } from "src/shared/lib/workspace-provisioner";
+import { projectRepo } from "src/modules/project/repo/project.repo";
+import { projectDetectionRepo } from "src/modules/project/repo/project-detection.repo";
+import { cloneProject } from "src/modules/project/usecases/clone-project.usecase";
+import { Railpack } from "src/shared/railpack/railpack";
+import { SpawnCommandRunner } from "src/shared/utils/command-runner";
 import { createDetectProjectService } from "src/modules/project/services/detect-project.service";
-import { createCreateProjectService } from "./services/create-project.service";
 import { createGetProjectJobStatusService } from "./services/get-project-job-status.service";
 import { createOutboxRelay } from "./services/outbox-relay.service";
 import { publishOutbox } from "./services/publish-outbox";
@@ -18,19 +16,16 @@ import { createCloneWorker } from "./workers/clone.worker";
 import { createDetectWorker } from "./workers/detect.worker";
 
 const pool = getPool();
+const workspaceProvisioner = new WorkspaceProvisioner();
+const railpack = new Railpack(
+  new SpawnCommandRunner(),
+  config.RAILPACK_DETECTION_TIMEOUT_MS,
+);
 const projectJobRepo = createProjectJobRepo(pool);
 const outboxRepo = createOutboxRepo(pool);
 const outboxRelay = createOutboxRelay({
   outboxRepo,
   publish: (message) => publishOutbox(message, projectJobRepo),
-});
-
-const createProjectService = createCreateProjectService({
-  repoDetailFetcher,
-  projectRepo,
-  projectJobRepo,
-  outboxRepo,
-  withTransaction,
 });
 
 const getProjectJobStatusService = createGetProjectJobStatusService({
@@ -39,9 +34,9 @@ const getProjectJobStatusService = createGetProjectJobStatusService({
 
 const detectProjectService = createDetectProjectService({
   projectRepo,
-  projectDetectionResultRepo,
+  projectDetectionResultRepo: projectDetectionRepo,
   workspace: workspaceProvisioner,
-  detector: projectConfigDetector,
+  detector: railpack,
   withTransaction,
   completeDetectionJob: async ({ jobId, client }) => {
     const completed = await projectJobRepo.setStatus({
@@ -68,7 +63,6 @@ export const startDetectWorker = () =>
   createDetectWorker({ projectJobRepo, detectProjectService });
 
 export {
-  createProjectService,
   getProjectJobStatusService,
   detectProjectService,
 };

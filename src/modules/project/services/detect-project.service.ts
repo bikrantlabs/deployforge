@@ -9,7 +9,7 @@ import {
   ProjectDetection,
 } from "../project-detection.types";
 import {
-  ProjectDetectionResultRepository,
+  ProjectDetectionRepository,
   ProjectRepository,
 } from "../repo/types";
 import { Project } from "../types";
@@ -34,12 +34,11 @@ export type DetectProjectService = {
     projectName: string;
     detection: ProjectDetection;
   }>;
-  detectTemp(destinationPath: string): Promise<ProjectDetection>;
 };
 
 export const createDetectProjectService = (deps: {
   projectRepo: ProjectRepository;
-  projectDetectionResultRepo: ProjectDetectionResultRepository;
+  projectDetectionResultRepo: ProjectDetectionRepository;
   workspace: Pick<WorkspaceProvisioner, "destinationFor">;
   detector: ProjectConfigDetector;
   withTransaction: TransactionRunner;
@@ -112,9 +111,6 @@ export const createDetectProjectService = (deps: {
         projectName: project.projectName,
         detection,
       };
-    },
-    detectTemp(destinationPath) {
-      return detector.detect(destinationPath);
     },
   };
 };

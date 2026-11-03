@@ -12,6 +12,11 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(60_000),
+  RAILPACK_BUILD_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(10 * 60 * 1000),
   RAILPACK_MISE_VERSION: z.string().default("2026.10.8"),
 
   // Database
@@ -22,6 +27,7 @@ const envSchema = z.object({
 
   // GitHub API (optional; improves unauthenticated rate limits)
   GITHUB_TOKEN: z.string().optional(),
+  GITLAB_TOKEN: z.string().optional(),
 
   // Emails
   EMAIL_HOST: z.string().min(1, "Email host is required").default("localhost"),

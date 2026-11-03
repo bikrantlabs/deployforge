@@ -1,4 +1,5 @@
 import { Pool, PoolClient } from "pg";
+import { getPool } from "src/shared/infra/db";
 import {
   CreateProjectData,
   FindProjectByNameData,
@@ -79,3 +80,5 @@ export const createProjectRepository = (pool: Pool): ProjectRepository => {
     },
   };
 };
+
+export const projectRepo = createProjectRepository(getPool());

@@ -2,6 +2,16 @@ version: "3.8"
 name: deployforge
 
 services:
+  buildkit:
+    image: moby/buildkit
+    container_name: buildkit
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      - buildkit-data:/var/lib/buildkit
+    networks:
+      - app-network
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -50,6 +60,8 @@ networks:
     driver: bridge # Explicitly define the network
 
 volumes:
+  buildkit-data:
+    driver: local
   redis-data:
     driver: local
   postgres-data:

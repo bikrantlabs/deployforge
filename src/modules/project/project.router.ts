@@ -3,6 +3,7 @@ import { asyncHandler } from "src/shared/errors/error-handler";
 import { authenticate } from "src/shared/middlewares/auth.middleware";
 import { validate } from "src/shared/middlewares/validation.middleware";
 import { inspectProjectRequestSchema } from "./dto/inspect-project.request";
+import { deployProjectRequestSchema } from "./dto/deploy-project.request";
 import { projectController } from "./project.controller";
 
 export const projectRouter = Router();
@@ -18,4 +19,11 @@ projectRouter.post(
   authenticate,
   validate(inspectProjectRequestSchema),
   asyncHandler(projectController.inspectProject),
+);
+
+projectRouter.post(
+  "/deploy",
+  authenticate,
+  validate(deployProjectRequestSchema),
+  asyncHandler(projectController.deployProject),
 );

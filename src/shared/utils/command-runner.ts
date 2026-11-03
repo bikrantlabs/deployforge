@@ -16,7 +16,12 @@ export type CommandRunOptions = {
 };
 
 export class CommandTimeoutError extends Error {
-  constructor(command: string, timeoutMs: number) {
+  constructor(
+    command: string,
+    timeoutMs: number,
+    readonly stdout = "",
+    readonly stderr = "",
+  ) {
     super(`Command '${command}' exceeded timeout of ${timeoutMs}ms`);
     this.name = "CommandTimeoutError";
   }
@@ -88,7 +93,14 @@ export class SpawnCommandRunner implements CommandRunner {
 
             kill("SIGTERM");
             forceKillTimeout = setTimeout(() => kill("SIGKILL"), 5_000);
-            reject(new CommandTimeoutError(command, options.timeoutMs!));
+            reject(
+              new CommandTimeoutError(
+                command,
+                options.timeoutMs!,
+                stdout,
+                stderr,
+              ),
+            );
           }, options.timeoutMs)
         : undefined;
 

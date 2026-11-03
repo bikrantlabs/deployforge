@@ -34,15 +34,12 @@ export type ProjectRepository = {
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
 };
 
-export type CreateProjectDetectionResult = {
+export type CreateProjectDetection = {
   detectionId: string;
   projectId: string;
   detection: ProjectDetection;
 };
 
-export type ProjectDetectionResultRepository = {
-  create(
-    result: CreateProjectDetectionResult,
-    client: PoolClient,
-  ): Promise<void>;
+export type ProjectDetectionRepository = {
+  create(result: CreateProjectDetection, client: PoolClient): Promise<void>;
 };

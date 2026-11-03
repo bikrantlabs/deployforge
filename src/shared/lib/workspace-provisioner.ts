@@ -24,8 +24,30 @@ export class WorkspaceProvisioner {
   constructor() {}
 
   destinationFor(project: ProjectLocation): string {
+    if (
+      project.userId === "." ||
+      project.userId === ".." ||
+      path.basename(project.userId) !== project.userId ||
+      project.projectName === "." ||
+      project.projectName === ".." ||
+      path.basename(project.projectName) !== project.projectName
+    ) {
+      throw new Error("Invalid workspace destination.");
+    }
+
     const root = this.WORKSPACE_ROOT ?? DEFAULT_WORKSPACE_ROOT;
-    return path.resolve(expandHome(root), project.userId, project.projectName);
+    const resolvedRoot = path.resolve(expandHome(root));
+    const destination = path.resolve(
+      resolvedRoot,
+      project.userId,
+      project.projectName,
+    );
+
+    if (!destination.startsWith(resolvedRoot + path.sep)) {
+      throw new Error("Invalid workspace destination.");
+    }
+
+    return destination;
   }
 
   /**

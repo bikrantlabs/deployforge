@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import {
   AppError,
+  DeploymentBuildError,
   ValidationError,
   InternalServerError,
   RateLimitError,
@@ -68,6 +69,13 @@ function formatErrorResponse(err: AppError, includeStack: boolean) {
     (body.error as Record<string, unknown>).retryAfterSeconds =
       err.retryAfterSeconds;
     (body.error as Record<string, unknown>).timeInSeconds = err.timeInSeconds;
+  }
+
+  if (err instanceof DeploymentBuildError && err.isOperational) {
+    const error = body.error as Record<string, unknown>;
+    error.exitCode = err.exitCode;
+    error.retryable = err.retryable;
+    error.logs = err.logs;
   }
 
   // Include field errors for validation failures

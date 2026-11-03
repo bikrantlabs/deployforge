@@ -1,18 +1,5 @@
-import { ProjectRepository } from "../repo/types";
-import { Project } from "../types";
+import { projectRepo } from "../repo/project.repo";
 
-export type ListProjectsService = {
-  listProjects(userId: string): Promise<Project[]>;
-};
-
-export const createListProjectsService = (deps: {
-  projectRepo: ProjectRepository;
-}): ListProjectsService => {
-  const { projectRepo } = deps;
-
-  return {
-    listProjects(userId) {
-      return projectRepo.listForUser(userId);
-    },
-  };
-};
+export function listProjects(userId: string) {
+  return projectRepo.listForUser(userId);
+}

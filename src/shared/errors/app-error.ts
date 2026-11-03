@@ -127,3 +127,39 @@ export class InternalServerError extends AppError {
     super(message, 500, "INTERNAL_SERVER_ERROR", false);
   }
 }
+
+export class DeploymentBuildError extends AppError {
+  constructor(input: {
+    message: string;
+    exitCode?: number;
+    retryable: boolean;
+    logs: { stdout: string; stderr: string };
+    timeout?: boolean;
+  }) {
+    const unexpectedExitCode =
+      input.exitCode !== undefined && input.exitCode !== 1 && input.exitCode !== 75;
+    const statusCode = unexpectedExitCode
+      ? 500
+      : input.timeout
+        ? 504
+        : input.retryable
+          ? 503
+          : 422;
+    const code = unexpectedExitCode
+      ? "RAILPACK_BUILD_ERROR"
+      : input.timeout
+        ? "BUILD_TIMEOUT"
+        : input.retryable
+          ? "BUILD_RETRYABLE"
+          : "BUILD_FAILED";
+    super(input.message, statusCode, code, !unexpectedExitCode);
+    this.name = "DeploymentBuildError";
+    this.exitCode = input.exitCode;
+    this.retryable = input.retryable;
+    this.logs = input.logs;
+  }
+
+  readonly exitCode?: number;
+  readonly retryable: boolean;
+  readonly logs: { stdout: string; stderr: string };
+}
