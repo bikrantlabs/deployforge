@@ -1,7 +1,7 @@
 import { createWorker } from "src/shared/infra/events/worker";
 import { logger } from "src/shared/logger";
 import { ProjectJobRepository } from "../repo/types";
-import { DetectProjectService } from "../services/detect-project.service";
+import { DetectProjectService } from "src/modules/project/services/detect-project.service";
 
 export const createDetectWorker = (deps: {
   projectJobRepo: ProjectJobRepository;

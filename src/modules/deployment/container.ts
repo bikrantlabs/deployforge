@@ -1,42 +1,34 @@
+import { generateUUID } from "src/shared/utils/uuid-generator";
 import { getPool, withTransaction } from "src/shared/infra/db";
-import { HttpRepoDetailFetcher } from "./lib/repo-detail-fetcher";
-import { createProjectRepository } from "./repo/project.repo";
-import { createProjectJobRepo } from "./repo/project-job.repo";
-import { createOutboxRepo } from "./repo/outbox.repo";
-import { createOutboxRelay } from "./services/outbox-relay.service";
+import {
+  cloneProjectToTemp,
+  cloneProjectToWorkspace,
+  detectProjectConfig,
+  findProjectByIdForUser,
+  persistProjectDetection,
+  projectRepo,
+  removeClonedProject,
+  repoDetailFetcher,
+  resolveProjectWorkspace,
+} from "src/modules/project/container";
+import { createCloneProjectService } from "src/modules/project/services/clone-project.service";
+import { createDetectProjectService } from "src/modules/project/services/detect-project.service";
 import { createCreateProjectService } from "./services/create-project.service";
-import { createCloneProjectService } from "./services/clone-project.service";
-import { WorkspaceProvisioner } from "./lib/workspace-provisioner";
-import { GitSourceCloner } from "./lib/repo-cloner";
-import { config } from "src/shared/config/config";
-import { publishOutbox } from "./services/publish-outbox";
-import { createCloneWorker } from "./workers/clone.worker";
 import { createGetProjectJobStatusService } from "./services/get-project-job-status.service";
-import { createDetectProjectService } from "./services/detect-project.service";
-import { RailpackConfigDetector } from "src/shared/railpack/railpack-config-detector";
-import { SpawnCommandRunner } from "src/shared/utils/command-runner";
-import { createListProjectsService } from "./services/list-projects.service";
+import { createOutboxRelay } from "./services/outbox-relay.service";
+import { publishOutbox } from "./services/publish-outbox";
+import { createOutboxRepo } from "./repo/outbox.repo";
+import { createProjectJobRepo } from "./repo/project-job.repo";
+import { createCloneWorker } from "./workers/clone.worker";
 import { createDetectWorker } from "./workers/detect.worker";
-import { createProjectDetectionResultRepository } from "./repo/project-detection-result.repo";
-import { createInspectProjectService } from "./services/inspect-project.service";
 
-const repoDetailFetcher = new HttpRepoDetailFetcher(config.GITHUB_TOKEN);
 const pool = getPool();
-const projectRepo = createProjectRepository(pool);
 const projectJobRepo = createProjectJobRepo(pool);
-const projectDetectionResultRepo = createProjectDetectionResultRepository();
 const outboxRepo = createOutboxRepo(pool);
 const outboxRelay = createOutboxRelay({
   outboxRepo,
   publish: (message) => publishOutbox(message, projectJobRepo),
 });
-
-const workspaceProvisioner = new WorkspaceProvisioner();
-const repoCloner = new GitSourceCloner();
-const projectConfigDetector = new RailpackConfigDetector(
-  new SpawnCommandRunner(),
-  config.RAILPACK_DETECTION_TIMEOUT_MS,
-);
 
 const createProjectService = createCreateProjectService({
   repoDetailFetcher,
@@ -46,35 +38,61 @@ const createProjectService = createCreateProjectService({
   withTransaction,
 });
 
-const listProjectsService = createListProjectsService(projectRepo);
-
-const cloneProjectService = createCloneProjectService({
-  projectRepo,
-  projectJobRepo,
-  outboxRepo,
-  withTransaction,
-  workspace: workspaceProvisioner,
-  repoCloner,
-});
-
 const getProjectJobStatusService = createGetProjectJobStatusService({
   projectJobRepo,
 });
 
-const detectProjectService = createDetectProjectService({
-  projectRepo,
-  projectDetectionResultRepo,
-  projectJobRepo,
+const cloneProjectService = createCloneProjectService({
+  findProjectByIdForUser,
+  cloneProjectToWorkspace,
+  cloneProjectToTemp,
+  removeClonedProject,
   withTransaction,
-  workspace: workspaceProvisioner,
-  detector: projectConfigDetector,
+  queueDetection: async ({ jobId, project, client }) => {
+    const queued = await projectJobRepo.setStatus({
+      jobId,
+      status: "queued",
+      currentStage: "detecting",
+      client,
+    });
+    if (!queued) {
+      throw new Error(`Unable to queue detection for project job ${jobId}`);
+    }
+
+    await outboxRepo.create(
+      {
+        outboxId: generateUUID(),
+        jobId,
+        topic: "detect.requested",
+        payload: {
+          jobId,
+          projectId: project.projectId,
+          userId: project.userId,
+        },
+        createdAt: new Date(),
+      },
+      client,
+    );
+  },
 });
 
-const inspectProjectService = createInspectProjectService({
-  repoDetailFetcher,
-  projectRepo,
-  detectProjectService,
-  cloneProjectService,
+const detectProjectService = createDetectProjectService({
+  findProjectByIdForUser,
+  resolveProjectWorkspace,
+  detectProjectConfig,
+  persistProjectDetection,
+  withTransaction,
+  completeDetectionJob: async ({ jobId, client }) => {
+    const completed = await projectJobRepo.setStatus({
+      jobId,
+      status: "completed",
+      currentStage: "detecting",
+      client,
+    });
+    if (!completed) {
+      throw new Error(`Unable to complete project job ${jobId}`);
+    }
+  },
 });
 
 export const startOutboxRelay = () => outboxRelay.start();
@@ -85,9 +103,7 @@ export const startDetectWorker = () =>
 
 export {
   createProjectService,
-  listProjectsService,
   cloneProjectService,
   getProjectJobStatusService,
   detectProjectService,
-  inspectProjectService,
 };

@@ -5,6 +5,7 @@ import { config } from "./shared/config/config";
 import { logger } from "./shared/logger";
 import { authRouter } from "./modules/auth/auth.router";
 import { deploymentRouter } from "./modules/deployment/deployment.router";
+import { projectRouter } from "./modules/project/project.router";
 import { errorHandler } from "./shared/errors/error-handler";
 
 export function createApp() {
@@ -43,6 +44,7 @@ export function createApp() {
   );
 
   app.use(`${config.API_PREFIX}/auth`, authRouter);
+  app.use(`${config.API_PREFIX}/projects`, projectRouter);
   app.use(`${config.API_PREFIX}/deployments`, deploymentRouter);
 
   app.use((_req, res) => {

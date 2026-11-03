@@ -1,6 +1,10 @@
 import { Pool, PoolClient } from "pg";
 import { logger } from "../logger";
 
+export type TransactionRunner = <T>(
+  callback: (client: PoolClient) => Promise<T>,
+) => Promise<T>;
+
 let pool: Pool | null = null;
 
 export const getPool = () => {

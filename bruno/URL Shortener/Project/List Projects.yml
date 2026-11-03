@@ -1,18 +1,14 @@
 info:
-  name: Detect Project
+  name: List Projects
   type: http
-  seq: 4
+  seq: 1
 
 http:
-  method: POST
-  url: "{{baseUrl}}/deployments/projects/:projectId/detect"
+  method: GET
+  url: "{{baseUrl}}/projects"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
-  params:
-    - name: projectId
-      value: 01a17db4-d594-7235-81ae-635baa4d9817
-      type: path
   auth: inherit
 
 settings:

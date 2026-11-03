@@ -1,13 +1,17 @@
 import { generateUUID } from "src/shared/utils/uuid-generator";
-import { ProjectNameAlreadyExistsError, InvalidCloneUrl } from "../errors";
-import { HttpRepoDetailFetcher } from "../lib/repo-detail-fetcher";
+import { HttpRepoDetailFetcher } from "src/shared/lib/repo-detail-fetcher";
 import {
-  ProjectJobRepository,
+  InvalidCloneUrl,
+  ProjectNameAlreadyExistsError,
+} from "src/modules/project/errors";
+import { Project } from "src/modules/project/types";
+import { ProjectRepository } from "src/modules/project/repo/types";
+import { Outbox, ProjectJob } from "../types";
+import {
   OutboxRepository,
-  ProjectRepository,
+  ProjectJobRepository,
   TransactionRunner,
 } from "../repo/types";
-import { Outbox, Project, ProjectJob } from "../types";
 
 export const createCreateProjectService = (deps: {
   repoDetailFetcher: HttpRepoDetailFetcher;

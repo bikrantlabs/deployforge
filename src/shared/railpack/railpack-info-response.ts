@@ -2,7 +2,7 @@ import {
   DetectionLog,
   ProjectDetection,
   ResolvedPackage,
-} from "src/modules/deployment/project-detection.types.js";
+} from "src/modules/project/project-detection.types.js";
 import { MalformedRailpackOutputError } from "./errors.js";
 import { isExecCommand, RailpackPlanOutput } from "./railpack-plan.types.js";
 

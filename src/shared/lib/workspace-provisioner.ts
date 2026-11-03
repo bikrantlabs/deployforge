@@ -1,9 +1,13 @@
 import { mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { Project } from "../types";
 
 const DEFAULT_WORKSPACE_ROOT = "~/.deployforge";
+
+type ProjectLocation = {
+  userId: string;
+  projectName: string;
+};
 
 function expandHome(target: string): string {
   if (target === "~") {
@@ -19,7 +23,7 @@ export class WorkspaceProvisioner {
   private readonly WORKSPACE_ROOT: string | undefined;
   constructor() {}
 
-  destinationFor(project: Pick<Project, "userId" | "projectName">): string {
+  destinationFor(project: ProjectLocation): string {
     const root = this.WORKSPACE_ROOT ?? DEFAULT_WORKSPACE_ROOT;
     return path.resolve(expandHome(root), project.userId, project.projectName);
   }
@@ -29,7 +33,7 @@ export class WorkspaceProvisioner {
    * @param project - Project Object
    * @returns destination - The destionation directory where the project will be cloned into: /userId/projectName
    */
-  async prepare(project: Project): Promise<string> {
+  async prepare(project: ProjectLocation): Promise<string> {
     // Keyed on the user id + project name so the location can be reconstructed
     // by later background jobs without persisting clone output.
     const destination = this.destinationFor(project);

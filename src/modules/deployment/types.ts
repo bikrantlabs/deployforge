@@ -17,20 +17,6 @@ export type ProjectJobTopics =
   | "deploy.completed"
   | "build.completed";
 
-export type RepoDetail = {
-  fullName: string;
-  sourceUrl: string;
-  repoId: number;
-  repoName: string;
-};
-
-export type Project = {
-  projectId: string;
-  sourceUrl: string;
-  projectName: string;
-  userId: string;
-};
-
 export type ProjectJob = {
   jobId: string;
   userId: string;
@@ -55,8 +41,3 @@ export type Outbox = {
   createdAt: Date;
   sent_at?: Date;
 };
-
-/**
- * A package version resolved by during detection
- * (e.g. node -> 24.21.0).
- */

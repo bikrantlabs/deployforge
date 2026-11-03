@@ -1,4 +1,4 @@
-import { DetectionLog } from "src/modules/deployment/project-detection.types";
+import { DetectionLog } from "src/modules/project/project-detection.types";
 
 export class DetectionError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {

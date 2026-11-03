@@ -14,7 +14,7 @@ import { createLogger } from "../logger.js";
 import {
   ProjectConfigDetector,
   ProjectDetection,
-} from "src/modules/deployment/project-detection.types.js";
+} from "src/modules/project/project-detection.types.js";
 
 export class RailpackConfigDetector implements ProjectConfigDetector {
   private readonly binary: string = "railpack";
