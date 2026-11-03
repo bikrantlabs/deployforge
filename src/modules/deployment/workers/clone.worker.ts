@@ -1,13 +1,17 @@
 import { createWorker } from "src/shared/infra/events/worker";
+import { TransactionRunner } from "src/shared/infra/db";
 import { logger } from "src/shared/logger";
-import { ProjectJobRepository } from "../repo/types";
-import { CloneProjectService } from "src/modules/project/services/clone-project.service";
+import { generateUUID } from "src/shared/utils/uuid-generator";
+import { CloneProjectUsecase } from "src/modules/project/usecases/clone-project.usecase";
+import { OutboxRepository, ProjectJobRepository } from "../repo/types";
 
 export const createCloneWorker = (deps: {
   projectJobRepo: ProjectJobRepository;
-  cloneProjectService: CloneProjectService;
+  cloneProject: CloneProjectUsecase;
+  outboxRepo: OutboxRepository;
+  withTransaction: TransactionRunner;
 }) => {
-  const { projectJobRepo, cloneProjectService } = deps;
+  const { projectJobRepo, cloneProject, outboxRepo, withTransaction } = deps;
 
   return createWorker("clone", {
     "clone-project": async (payload, job) => {
@@ -35,10 +39,38 @@ export const createCloneWorker = (deps: {
       }
 
       try {
-        await cloneProjectService.cloneProject({
-          jobId: payload.jobId,
+        const project = await cloneProject({
           projectId: payload.projectId,
           userId: payload.userId,
+        });
+
+        await withTransaction(async (client) => {
+          const queued = await projectJobRepo.setStatus({
+            jobId: payload.jobId,
+            status: "queued",
+            currentStage: "detecting",
+            client,
+          });
+          if (!queued) {
+            throw new Error(
+              `Unable to queue detection for project job ${payload.jobId}`,
+            );
+          }
+
+          await outboxRepo.create(
+            {
+              outboxId: generateUUID(),
+              jobId: payload.jobId,
+              topic: "detect.requested",
+              payload: {
+                jobId: payload.jobId,
+                projectId: project.projectId,
+                userId: payload.userId,
+              },
+              createdAt: new Date(),
+            },
+            client,
+          );
         });
       } catch (error) {
         const errorMessage =

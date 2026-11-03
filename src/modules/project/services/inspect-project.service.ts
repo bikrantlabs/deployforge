@@ -1,10 +1,13 @@
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
 import { HttpRepoDetailFetcher } from "src/shared/lib/repo-detail-fetcher";
+import { GitSourceCloner } from "src/shared/lib/repo-cloner";
+import { tempCloneRoot } from "src/shared/utils/path-utils";
 import { generateUUID } from "src/shared/utils/uuid-generator";
 import { InvalidCloneUrl } from "../errors";
 import { ProjectConfigDetector } from "../project-detection.types";
 import { ProjectRepository } from "../repo/types";
 import { InspectProjectResult } from "../types";
-import { CloneProjectToTempUsecase } from "../usecases/clone-project-to-temp.usecase";
 import { RemoveClonedProjectUsecase } from "../usecases/remove-cloned-project.usecase";
 
 export type InspectProjectService = {
@@ -17,14 +20,14 @@ export type InspectProjectService = {
 export const createInspectProjectService = (deps: {
   projectRepo: ProjectRepository;
   repoDetailFetcher: HttpRepoDetailFetcher;
-  cloneProjectToTemp: CloneProjectToTempUsecase;
+  repoCloner: GitSourceCloner;
   detector: ProjectConfigDetector;
   removeClonedProject: RemoveClonedProjectUsecase;
 }): InspectProjectService => {
   const {
     projectRepo,
     repoDetailFetcher,
-    cloneProjectToTemp,
+    repoCloner,
     detector,
     removeClonedProject,
   } = deps;
@@ -49,11 +52,20 @@ export const createInspectProjectService = (deps: {
         sourceUrl: input.cloneUrl,
       };
 
-      const destination = await cloneProjectToTemp({
-        repoName: repoDetail.repoName,
-        sourceUrl: input.cloneUrl,
-        userId: input.userId,
-      });
+      const tempRoot = tempCloneRoot();
+      const destination = path.resolve(
+        tempRoot,
+        input.userId,
+        repoDetail.repoName,
+      );
+
+      // Guard against userId/repoName containing path traversal segments.
+      if (!destination.startsWith(tempRoot + "/")) {
+        throw new Error("Invalid temporary clone destination.");
+      }
+
+      await mkdir(destination, { recursive: true });
+      await repoCloner.clone(input.cloneUrl, destination);
 
       try {
         const detection = await detector.detect(destination);

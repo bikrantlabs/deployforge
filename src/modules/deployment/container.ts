@@ -1,16 +1,12 @@
-import { generateUUID } from "src/shared/utils/uuid-generator";
 import { getPool, withTransaction } from "src/shared/infra/db";
 import {
-  cloneProjectToTemp,
-  cloneProjectToWorkspace,
+  cloneProject,
   projectConfigDetector,
   projectDetectionResultRepo,
   projectRepo,
-  removeClonedProject,
   repoDetailFetcher,
   workspaceProvisioner,
 } from "src/modules/project/container";
-import { createCloneProjectService } from "src/modules/project/services/clone-project.service";
 import { createDetectProjectService } from "src/modules/project/services/detect-project.service";
 import { createCreateProjectService } from "./services/create-project.service";
 import { createGetProjectJobStatusService } from "./services/get-project-job-status.service";
@@ -41,40 +37,6 @@ const getProjectJobStatusService = createGetProjectJobStatusService({
   projectJobRepo,
 });
 
-const cloneProjectService = createCloneProjectService({
-  projectRepo,
-  cloneProjectToWorkspace,
-  cloneProjectToTemp,
-  removeClonedProject,
-  withTransaction,
-  queueDetection: async ({ jobId, project, client }) => {
-    const queued = await projectJobRepo.setStatus({
-      jobId,
-      status: "queued",
-      currentStage: "detecting",
-      client,
-    });
-    if (!queued) {
-      throw new Error(`Unable to queue detection for project job ${jobId}`);
-    }
-
-    await outboxRepo.create(
-      {
-        outboxId: generateUUID(),
-        jobId,
-        topic: "detect.requested",
-        payload: {
-          jobId,
-          projectId: project.projectId,
-          userId: project.userId,
-        },
-        createdAt: new Date(),
-      },
-      client,
-    );
-  },
-});
-
 const detectProjectService = createDetectProjectService({
   projectRepo,
   projectDetectionResultRepo,
@@ -96,13 +58,17 @@ const detectProjectService = createDetectProjectService({
 
 export const startOutboxRelay = () => outboxRelay.start();
 export const startCloneWorker = () =>
-  createCloneWorker({ projectJobRepo, cloneProjectService });
+  createCloneWorker({
+    projectJobRepo,
+    cloneProject,
+    outboxRepo,
+    withTransaction,
+  });
 export const startDetectWorker = () =>
   createDetectWorker({ projectJobRepo, detectProjectService });
 
 export {
   createProjectService,
-  cloneProjectService,
   getProjectJobStatusService,
   detectProjectService,
 };

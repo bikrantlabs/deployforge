@@ -9,8 +9,7 @@ import { createProjectDetectionResultRepository } from "./repo/project-detection
 import { createProjectRepository } from "./repo/project.repo";
 import { createInspectProjectService } from "./services/inspect-project.service";
 import { createListProjectsService } from "./services/list-projects.service";
-import { createCloneProjectToTempUsecase } from "./usecases/clone-project-to-temp.usecase";
-import { createCloneProjectToWorkspaceUsecase } from "./usecases/clone-project-to-workspace.usecase";
+import { createCloneProjectUsecase } from "./usecases/clone-project.usecase";
 import { createRemoveClonedProjectUsecase } from "./usecases/remove-cloned-project.usecase";
 
 const pool = getPool();
@@ -27,11 +26,9 @@ export const projectConfigDetector = new RailpackConfigDetector(
 
 const repoCloner = new GitSourceCloner();
 
-export const cloneProjectToWorkspace = createCloneProjectToWorkspaceUsecase({
+export const cloneProject = createCloneProjectUsecase({
+  projectRepo,
   workspace: workspaceProvisioner,
-  repoCloner,
-});
-export const cloneProjectToTemp = createCloneProjectToTempUsecase({
   repoCloner,
 });
 export const removeClonedProject = createRemoveClonedProjectUsecase();
@@ -43,7 +40,7 @@ export const listProjectsService = createListProjectsService({
 export const inspectProjectService = createInspectProjectService({
   projectRepo,
   repoDetailFetcher,
-  cloneProjectToTemp,
+  repoCloner,
   detector: projectConfigDetector,
   removeClonedProject,
 });
