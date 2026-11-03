@@ -52,6 +52,11 @@ const envSchema = z.object({
     .string()
     .min(32, "API_KEY_SECRET must be at least 32 chars"),
 
+  MASTER_KEY: z
+    .string()
+    .min(32, "MASTER_KEY must be at least 32 chars")
+    .transform((val) => Buffer.from(val)), // Convert to a Buffer
+
   REFRESH_TOKEN_COOKIE_KEY: z.string().default("refresh_token"),
 
   // Rate limiting

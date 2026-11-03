@@ -32,6 +32,10 @@ export type ProjectRepository = {
     data: FindProjectBySourceUrlData,
   ): Promise<Project | null>;
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
+  getDecryptedKey(
+    projectId: string,
+    client: PoolClient,
+  ): Promise<Buffer | null>;
 };
 
 export type CreateProjectDetection = {
@@ -42,4 +46,29 @@ export type CreateProjectDetection = {
 
 export type ProjectDetectionRepository = {
   create(result: CreateProjectDetection, client: PoolClient): Promise<void>;
+};
+
+export type CreateEnvVarsData = {
+  projectId: string;
+  projectEncryptionKey: Buffer;
+  envVariables: Record<string, string>;
+};
+
+export type LoadEnvVarsData = {
+  projectId: string;
+  projectEncrpytionKey: Buffer;
+};
+export type EnvVarsRepository = {
+  create(input: CreateEnvVarsData, client: PoolClient): Promise<void>;
+  load(input: LoadEnvVarsData): Promise<Record<string, string> | null>;
+};
+
+// Deployments
+
+export type CreateProjectDeploymentData = {
+  deploymentId: string;
+  projectId: string;
+};
+export type ProjectDeploymentRepository = {
+  create(input: CreateProjectDeploymentData, client: PoolClient): Promise<void>;
 };
