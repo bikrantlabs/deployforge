@@ -2,9 +2,10 @@ import { generateUUID } from "src/shared/utils/uuid-generator";
 import { InvalidCloneUrl } from "../errors";
 import { HttpRepoDetailFetcher } from "../lib/repo-detail-fetcher";
 import { ProjectRepository } from "../repo/types";
-import { Project, ProjectDetection } from "../types";
+import { Project } from "../types";
 import { CloneProjectService } from "./clone-project.service";
 import { DetectProjectService } from "./detect-project.service";
+import { ProjectDetection } from "../project-detection.types";
 
 export const createInspectProjectService = (deps: {
   repoDetailFetcher: HttpRepoDetailFetcher;
@@ -51,6 +52,10 @@ export const createInspectProjectService = (deps: {
 
       const projectDetection =
         await detectProjectService.detectTemp(destination);
+
+      // TODO: Get the .env.example file from repo's root folder and send it as detectedEnv
+      // as Record<string, string>
+      // const detectedRequiredEnv = await detectEnvVariables(destination);
 
       await cloneProjectService.removeClonedProject(destination);
 

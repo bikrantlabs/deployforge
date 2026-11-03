@@ -1,5 +1,4 @@
 import { NotFoundError } from "src/shared/errors/app-error";
-import { ProjectConfigDetector, ProjectDetection } from "../types";
 import { WorkspaceProvisioner } from "../lib/workspace-provisioner";
 import { createLogger } from "src/shared/logger";
 import {
@@ -9,6 +8,10 @@ import {
   TransactionRunner,
 } from "../repo/types";
 import { generateUUID } from "src/shared/utils/uuid-generator";
+import {
+  ProjectConfigDetector,
+  ProjectDetection,
+} from "../project-detection.types";
 
 const logger = createLogger("detect-project");
 

@@ -1,5 +1,6 @@
 import { PoolClient } from "pg";
-import { Outbox, Project, ProjectDetection, ProjectJob } from "../types";
+import { Outbox, Project, ProjectJob } from "../types";
+import { ProjectDetection } from "../project-detection.types";
 
 export type CreateProjectData = {
   projectId: string;
