@@ -1,13 +1,18 @@
 import { PoolClient } from "pg";
 import { NotFoundError } from "src/shared/errors/app-error";
 import { TransactionRunner } from "src/shared/infra/db";
+import { WorkspaceProvisioner } from "src/shared/lib/workspace-provisioner";
 import { createLogger } from "src/shared/logger";
-import { ProjectDetection } from "../project-detection.types";
+import { generateUUID } from "src/shared/utils/uuid-generator";
+import {
+  ProjectConfigDetector,
+  ProjectDetection,
+} from "../project-detection.types";
+import {
+  ProjectDetectionResultRepository,
+  ProjectRepository,
+} from "../repo/types";
 import { Project } from "../types";
-import { DetectProjectConfigUsecase } from "../usecases/detect-project-config.usecase";
-import { FindProjectByIdForUserUsecase } from "../usecases/find-project-by-id-for-user.usecase";
-import { PersistProjectDetectionUsecase } from "../usecases/persist-project-detection.usecase";
-import { ResolveProjectWorkspaceUsecase } from "../usecases/resolve-project-workspace.usecase";
 
 const logger = createLogger("detect-project");
 
@@ -33,18 +38,18 @@ export type DetectProjectService = {
 };
 
 export const createDetectProjectService = (deps: {
-  findProjectByIdForUser: FindProjectByIdForUserUsecase;
-  resolveProjectWorkspace: ResolveProjectWorkspaceUsecase;
-  detectProjectConfig: DetectProjectConfigUsecase;
-  persistProjectDetection: PersistProjectDetectionUsecase;
+  projectRepo: ProjectRepository;
+  projectDetectionResultRepo: ProjectDetectionResultRepository;
+  workspace: Pick<WorkspaceProvisioner, "destinationFor">;
+  detector: ProjectConfigDetector;
   withTransaction: TransactionRunner;
   completeDetectionJob?: CompleteDetectionJob;
 }): DetectProjectService => {
   const {
-    findProjectByIdForUser,
-    resolveProjectWorkspace,
-    detectProjectConfig,
-    persistProjectDetection,
+    projectRepo,
+    projectDetectionResultRepo,
+    workspace,
+    detector,
     withTransaction,
     completeDetectionJob,
   } = deps;
@@ -53,7 +58,7 @@ export const createDetectProjectService = (deps: {
     async detectProject(input) {
       const lookupStartedAt = Date.now();
       logger.info({ projectId: input.projectId }, "Detection request received");
-      const project = await findProjectByIdForUser({
+      const project = await projectRepo.findByIdForUser({
         projectId: input.projectId,
         userId: input.userId,
       });
@@ -69,19 +74,23 @@ export const createDetectProjectService = (deps: {
         throw new NotFoundError("Project");
       }
 
-      const destinationPath = resolveProjectWorkspace(project);
+      const destinationPath = workspace.destinationFor(project);
       logger.info(
         { projectId: project.projectId },
         "Starting project analysis",
       );
-      const detection = await detectProjectConfig(destinationPath);
+      const detection = await detector.detect(destinationPath);
 
       await withTransaction(async (client) => {
-        const { detectionId } = await persistProjectDetection({
-          projectId: project.projectId,
-          detection,
+        const detectionId = generateUUID();
+        await projectDetectionResultRepo.create(
+          {
+            detectionId,
+            projectId: project.projectId,
+            detection,
+          },
           client,
-        });
+        );
 
         if (input.jobId) {
           if (!completeDetectionJob) {
@@ -105,7 +114,7 @@ export const createDetectProjectService = (deps: {
       };
     },
     detectTemp(destinationPath) {
-      return detectProjectConfig(destinationPath);
+      return detector.detect(destinationPath);
     },
   };
 };

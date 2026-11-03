@@ -3,13 +3,12 @@ import { getPool, withTransaction } from "src/shared/infra/db";
 import {
   cloneProjectToTemp,
   cloneProjectToWorkspace,
-  detectProjectConfig,
-  findProjectByIdForUser,
-  persistProjectDetection,
+  projectConfigDetector,
+  projectDetectionResultRepo,
   projectRepo,
   removeClonedProject,
   repoDetailFetcher,
-  resolveProjectWorkspace,
+  workspaceProvisioner,
 } from "src/modules/project/container";
 import { createCloneProjectService } from "src/modules/project/services/clone-project.service";
 import { createDetectProjectService } from "src/modules/project/services/detect-project.service";
@@ -43,7 +42,7 @@ const getProjectJobStatusService = createGetProjectJobStatusService({
 });
 
 const cloneProjectService = createCloneProjectService({
-  findProjectByIdForUser,
+  projectRepo,
   cloneProjectToWorkspace,
   cloneProjectToTemp,
   removeClonedProject,
@@ -77,10 +76,10 @@ const cloneProjectService = createCloneProjectService({
 });
 
 const detectProjectService = createDetectProjectService({
-  findProjectByIdForUser,
-  resolveProjectWorkspace,
-  detectProjectConfig,
-  persistProjectDetection,
+  projectRepo,
+  projectDetectionResultRepo,
+  workspace: workspaceProvisioner,
+  detector: projectConfigDetector,
   withTransaction,
   completeDetectionJob: async ({ jobId, client }) => {
     const completed = await projectJobRepo.setStatus({

@@ -1,11 +1,11 @@
+import { HttpRepoDetailFetcher } from "src/shared/lib/repo-detail-fetcher";
+import { generateUUID } from "src/shared/utils/uuid-generator";
 import { InvalidCloneUrl } from "../errors";
+import { ProjectConfigDetector } from "../project-detection.types";
+import { ProjectRepository } from "../repo/types";
 import { InspectProjectResult } from "../types";
 import { CloneProjectToTempUsecase } from "../usecases/clone-project-to-temp.usecase";
-import { DetectProjectConfigUsecase } from "../usecases/detect-project-config.usecase";
-import { FetchRepoDetailUsecase } from "../usecases/fetch-repo-detail.usecase";
-import { FindProjectBySourceUrlUsecase } from "../usecases/find-project-by-source-url.usecase";
 import { RemoveClonedProjectUsecase } from "../usecases/remove-cloned-project.usecase";
-import { generateUUID } from "src/shared/utils/uuid-generator";
 
 export type InspectProjectService = {
   inspectProject(input: {
@@ -15,28 +15,28 @@ export type InspectProjectService = {
 };
 
 export const createInspectProjectService = (deps: {
-  findProjectBySourceUrl: FindProjectBySourceUrlUsecase;
-  fetchRepoDetail: FetchRepoDetailUsecase;
+  projectRepo: ProjectRepository;
+  repoDetailFetcher: HttpRepoDetailFetcher;
   cloneProjectToTemp: CloneProjectToTempUsecase;
-  detectProjectConfig: DetectProjectConfigUsecase;
+  detector: ProjectConfigDetector;
   removeClonedProject: RemoveClonedProjectUsecase;
 }): InspectProjectService => {
   const {
-    findProjectBySourceUrl,
-    fetchRepoDetail,
+    projectRepo,
+    repoDetailFetcher,
     cloneProjectToTemp,
-    detectProjectConfig,
+    detector,
     removeClonedProject,
   } = deps;
 
   return {
     async inspectProject(input) {
-      const existing = await findProjectBySourceUrl({
+      const existing = await projectRepo.findUniqueBySourceUrl({
         userId: input.userId,
         sourceUrl: input.cloneUrl,
       });
 
-      const repoDetail = await fetchRepoDetail(input.cloneUrl);
+      const repoDetail = await repoDetailFetcher.fetch(input.cloneUrl);
 
       if (!repoDetail) {
         throw new InvalidCloneUrl();
@@ -56,7 +56,7 @@ export const createInspectProjectService = (deps: {
       });
 
       try {
-        const detection = await detectProjectConfig(destination);
+        const detection = await detector.detect(destination);
 
         // TODO: Get the .env.example file from repo's root folder and send it as detectedEnv
         // as Record<string, string>

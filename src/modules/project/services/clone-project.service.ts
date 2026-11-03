@@ -1,10 +1,10 @@
 import { PoolClient } from "pg";
 import { NotFoundError } from "src/shared/errors/app-error";
 import { TransactionRunner } from "src/shared/infra/db";
+import { ProjectRepository } from "../repo/types";
 import { Project } from "../types";
 import { CloneProjectToTempUsecase } from "../usecases/clone-project-to-temp.usecase";
 import { CloneProjectToWorkspaceUsecase } from "../usecases/clone-project-to-workspace.usecase";
-import { FindProjectByIdForUserUsecase } from "../usecases/find-project-by-id-for-user.usecase";
 import { RemoveClonedProjectUsecase } from "../usecases/remove-cloned-project.usecase";
 
 export type QueueDetectionAfterClone = (input: {
@@ -43,7 +43,7 @@ export type CloneProjectService = {
 };
 
 export const createCloneProjectService = (deps: {
-  findProjectByIdForUser: FindProjectByIdForUserUsecase;
+  projectRepo: ProjectRepository;
   cloneProjectToWorkspace: CloneProjectToWorkspaceUsecase;
   cloneProjectToTemp: CloneProjectToTempUsecase;
   removeClonedProject: RemoveClonedProjectUsecase;
@@ -51,7 +51,7 @@ export const createCloneProjectService = (deps: {
   queueDetection?: QueueDetectionAfterClone;
 }): CloneProjectService => {
   const {
-    findProjectByIdForUser,
+    projectRepo,
     cloneProjectToWorkspace,
     cloneProjectToTemp,
     removeClonedProject,
@@ -61,7 +61,7 @@ export const createCloneProjectService = (deps: {
 
   return {
     async cloneProject(input) {
-      const project = await findProjectByIdForUser({
+      const project = await projectRepo.findByIdForUser({
         projectId: input.projectId,
         userId: input.userId,
       });
