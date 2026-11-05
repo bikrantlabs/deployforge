@@ -1,0 +1,25 @@
+info:
+  name: Get Deployment Logs
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/deployments/:deploymentId/logs"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Accept
+      value: text/event-stream
+  params:
+    - name: deploymentId
+      value: "{{deploymentId}}"
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

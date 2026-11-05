@@ -26,6 +26,25 @@ export type ProjectJob = {
   message?: string;
 };
 
+export type DeploymentStatus =
+  | "queued"
+  | "building"
+  | "built"
+  | "failed"
+  | "live"
+  | "cancelled";
+
+export type Deployment = {
+  deploymentId: string;
+  projectId: string;
+  status: DeploymentStatus | null;
+  imageRef: string | null;
+  errorMessage: string | null;
+  createdAt: Date;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+};
+
 export type JobStage = {
   stageId: string;
   jobId: string;

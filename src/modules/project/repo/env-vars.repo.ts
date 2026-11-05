@@ -1,8 +1,9 @@
 import { Pool } from "pg";
 import { EnvVarsRepository } from "./types";
 import { decryptBytes, encryptBytes } from "../services/encryption.service";
+import { getPool } from "src/shared/infra/db";
 
-export const createEnvVarsRepo = (pool: Pool): EnvVarsRepository => ({
+const createEnvVarsRepo = (pool: Pool): EnvVarsRepository => ({
   async create(input, client): Promise<void> {
     const { envVariables, projectEncryptionKey, projectId } = input;
     const names = Object.keys(envVariables);
@@ -52,3 +53,5 @@ export const createEnvVarsRepo = (pool: Pool): EnvVarsRepository => ({
     return envVariables;
   },
 });
+
+export const envVarsRepo = createEnvVarsRepo(getPool());

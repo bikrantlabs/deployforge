@@ -1,9 +1,8 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 const DEFAULT_WORKSPACE_ROOT = "~/.deployforge";
-
 type ProjectLocation = {
   userId: string;
   projectName: string;
@@ -63,5 +62,13 @@ export class WorkspaceProvisioner {
     await mkdir(destination, { recursive: true });
 
     return destination;
+  }
+
+  /**
+   * Removes the cloned workspace for a project, if it exists.
+   */
+  async remove(project: ProjectLocation): Promise<void> {
+    const destination = this.destinationFor(project);
+    await rm(destination, { recursive: true, force: true });
   }
 }

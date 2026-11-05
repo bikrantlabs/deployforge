@@ -1,6 +1,7 @@
 import { PoolClient } from "pg";
 import { ProjectDetection } from "../project-detection.types";
 import { Project } from "../types";
+import { Deployment, DeploymentStatus } from "src/modules/deployment/types";
 
 export type CreateProjectData = {
   projectId: string;
@@ -32,10 +33,8 @@ export type ProjectRepository = {
     data: FindProjectBySourceUrlData,
   ): Promise<Project | null>;
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
-  getDecryptedKey(
-    projectId: string,
-    client: PoolClient,
-  ): Promise<Buffer | null>;
+  deleteByIdForUser(data: FindProjectByIdData): Promise<boolean>;
+  getDecryptedKey(projectId: string, client: PoolClient): Promise<Buffer>;
 };
 
 export type CreateProjectDetection = {
@@ -68,7 +67,32 @@ export type EnvVarsRepository = {
 export type CreateProjectDeploymentData = {
   deploymentId: string;
   projectId: string;
+  buildLogPath: string;
 };
+export type ProjectDeploymentStatus = DeploymentStatus;
+
+export type DeploymentLogInfo = {
+  buildLogPath: string;
+  status: ProjectDeploymentStatus;
+};
+
 export type ProjectDeploymentRepository = {
   create(input: CreateProjectDeploymentData, client: PoolClient): Promise<void>;
+  listForUser(userId: string): Promise<Deployment[]>;
+  listForProject(input: {
+    projectId: string;
+    userId: string;
+  }): Promise<Deployment[]>;
+  findByIdForUser(input: {
+    deploymentId: string;
+    userId: string;
+  }): Promise<Deployment | null>;
+  findForUser(input: {
+    deploymentId: string;
+    userId: string;
+  }): Promise<DeploymentLogInfo | null>;
+  updateStatus(
+    deploymentId: string,
+    status: Extract<ProjectDeploymentStatus, "built" | "failed">,
+  ): Promise<void>;
 };

@@ -96,10 +96,18 @@ export const createProjectRepository = (pool: Pool): ProjectRepository => {
       return toPublicProject(rows[0]);
     },
 
+    async deleteByIdForUser(data) {
+      const { rowCount } = await pool.query(
+        "DELETE FROM projects WHERE id = $1 AND user_id = $2",
+        [data.projectId, data.userId],
+      );
+      return (rowCount ?? 0) > 0;
+    },
+
     async getDecryptedKey(
       projectId: string,
       client: PoolClient,
-    ): Promise<Buffer | null> {
+    ): Promise<Buffer> {
       const label = `project-key|${projectId}`;
 
       // FOR UPDATE locks the row from being updated by other transactions until this transactions finishes
@@ -107,15 +115,17 @@ export const createProjectRepository = (pool: Pool): ProjectRepository => {
         "SELECT encrypted_project_key FROM projects WHERE id = $1 FOR UPDATE",
         [projectId],
       );
-      if (rows[0]?.encrypted_project_key) {
-        return decryptBytes(
-          config.MASTER_KEY,
-          rows[0].encrypted_project_key,
-          label,
+      if (!rows[0]?.encrypted_project_key) {
+        throw new Error(
+          `Encryption Key doesn't exist for project ${projectId}.`,
         );
       }
 
-      return null;
+      return decryptBytes(
+        config.MASTER_KEY,
+        rows[0].encrypted_project_key,
+        label,
+      );
     },
   };
 };

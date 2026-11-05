@@ -2,6 +2,31 @@ import { z } from "zod";
 
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
+
+const masterKeySchema = z.string().transform((value, ctx) => {
+  const trimmed = value.trim();
+  const isBase64 =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+      trimmed,
+    );
+  const decodedKey = isBase64
+    ? Buffer.from(trimmed, "base64")
+    : Buffer.alloc(0);
+
+  // Support existing 32-byte UTF-8 keys while interpreting generated Base64 keys correctly.
+  const key =
+    decodedKey.length === 32 ? decodedKey : Buffer.from(trimmed, "utf8");
+  if (key.length !== 32) {
+    ctx.addIssue({
+      code: "custom",
+      message:
+        "MASTER_KEY must be a 32-byte key or Base64 encoding of 32 bytes",
+    });
+    return z.NEVER;
+  }
+  return key;
+});
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["test", "development", "production"])
@@ -52,10 +77,9 @@ const envSchema = z.object({
     .string()
     .min(32, "API_KEY_SECRET must be at least 32 chars"),
 
-  MASTER_KEY: z
-    .string()
-    .min(32, "MASTER_KEY must be at least 32 chars")
-    .transform((val) => Buffer.from(val)), // Convert to a Buffer
+  MASTER_KEY: masterKeySchema,
+
+  LOGS_DIR: z.string().default("~/.deployforge/logs"),
 
   REFRESH_TOKEN_COOKIE_KEY: z.string().default("refresh_token"),
 

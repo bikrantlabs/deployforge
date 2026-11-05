@@ -10,6 +10,7 @@ import {
   UnsupportedProjectError,
 } from "./errors.js";
 import { DeploymentBuildError } from "../errors/app-error.js";
+import { stat } from "node:fs/promises";
 import {
   CommandResult,
   CommandRunner,
@@ -126,6 +127,24 @@ export class Railpack implements ProjectConfigDetector {
     options: RailpackBuildOptions,
     onOutput: (chunk: string, stream: CommandStream) => void,
   ): Promise<CommandResult> {
+    try {
+      const workspaceInfo = await stat(workspace);
+      if (!workspaceInfo.isDirectory()) {
+        throw new Error("not a directory");
+      }
+    } catch {
+      this.logger.warn({ workspace }, "Project build workspace is unavailable");
+      throw this.buildError({
+        message:
+          "Project workspace is missing. Inspect the repository again before deploying.",
+        retryable: false,
+        logs: {
+          stdout: "",
+          stderr: `Project workspace is unavailable: ${workspace}`,
+        },
+      });
+    }
+
     const imagePrefix = "deployforge_";
     const args = ["build", ".", "--name", imagePrefix + options.name];
     for (const [key, value] of Object.entries(options.envVariables)) {

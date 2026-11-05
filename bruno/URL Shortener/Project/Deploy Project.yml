@@ -14,17 +14,25 @@ http:
     data: |-
       {
         "project": {
-          "projectId": "01a1a013-6497-71c7-866a-019de2d8cb73",
-          "projectName": "deployforge-web",
-          "sourceUrl": "https://github.com/bikrantlabs/deployforge-web"
+          "projectId": "01a1aa8a-6b15-7097-b0ce-40da924abe1f",
+            "projectName": "deployforge-web-iii",
+            
+            "sourceUrl": "https://github.com/bikrantlabs/deployforge-web.git"
         },
         "envVariables": {
-          "NODE_ENV": "production",
-          "API_URL":"http://localhost:3000",
-          "SESSION_SECRET":"dPiAd/NSJ9Cla3a0DKuQ/Q2Kly2pDsBrvXmUvc8kna4="
+          "NODE_ENV": "production"
         }
       }
   auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const deploymentId = res.body.data?.deployment?.deploymentId;
+
+
+        bru.setVar("deploymentId", deploymentId);
 
 settings:
   encodeUrl: true
