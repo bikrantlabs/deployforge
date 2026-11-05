@@ -9,7 +9,7 @@ import { createLogger } from "src/shared/logger";
 import { createLogFileWriter } from "src/shared/utils/log-file-writer";
 import { projectDeploymentRepo } from "../repo/deployment.repo";
 import { generateUUID } from "src/shared/utils/uuid-generator";
-import { doneChannel, logBus, logChannel, LogLine } from "./log-bus";
+import { doneChannel, logBus, logChannel, LogChunk } from "./log-bus";
 import { envVarsRepo } from "../repo/env-vars.repo";
 import { buildLogPathFor } from "src/shared/lib/build-log-path";
 
@@ -19,6 +19,12 @@ const railpack = new Railpack(
 );
 const workspace = new WorkspaceProvisioner();
 const logger = createLogger("deploy-service");
+
+export type DeployServiceInput = {
+  project: Project;
+  envVariables: Record<string, string>;
+  commandOverrides?: Record<"build" | "start" | "start", string>;
+};
 
 export async function deployService(input: {
   project: Project;
@@ -129,7 +135,7 @@ function createBuildOutputHandler(opts: {
   const { deploymentId, envVariables, logFile } = opts;
   const secrets = Object.values(envVariables).filter(Boolean);
 
-  // Counts lines for this deployment. Gives every line a stable position.
+  // Counts chunks for this deployment. Gives every chunk a stable position.
   let nextSeq = 0;
   let pendingWrite = Promise.resolve();
 
@@ -140,23 +146,22 @@ function createBuildOutputHandler(opts: {
       output = output.split(secret).join("[REDACTED]");
     }
 
-    // A chunk can hold several lines, so split it: one seq per line.
-    for (const text of output.split("\n")) {
-      if (text.trim()) {
-        const line: LogLine = {
-          seq: nextSeq++,
-          time: new Date().toISOString(),
-          stream,
-          text,
-        };
+    const lines = output
+      .split("\n")
+      .map((line) => (line.endsWith("\r") ? line.slice(0, -1) : line))
+      .filter((line) => line.trim());
+    const logChunk: LogChunk = {
+      seq: nextSeq++,
+      time: new Date().toISOString(),
+      stream,
+      lines,
+    };
 
-        // Persist before publishing so replay can never miss a live line.
-        pendingWrite = pendingWrite.then(async () => {
-          await logFile.write(JSON.stringify(line) + "\n");
-          logBus.emit(logChannel(deploymentId), line);
-        });
-      }
-    }
+    // Persist before publishing so replay can never miss a live chunk.
+    pendingWrite = pendingWrite.then(async () => {
+      await logFile.write(JSON.stringify(logChunk) + "\n");
+      logBus.emit(logChannel(deploymentId), logChunk);
+    });
   }) as BuildOutputHandler;
 
   onOutput.flush = () => pendingWrite;

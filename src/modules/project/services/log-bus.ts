@@ -1,11 +1,11 @@
 import { EventEmitter } from "node:events";
 
-// One log line. `seq` is the line number (0, 1, 2, ...) within one deployment.
-export type LogLine = {
+// One stream callback chunk. `seq` is the chunk number within one deployment.
+export type LogChunk = {
   seq: number;
   time: string;
   stream: "stdout" | "stderr";
-  text: string;
+  lines: string[];
 };
 
 // Shared by the build (publishes) and the SSE route (listens).

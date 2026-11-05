@@ -14,7 +14,7 @@
   "author": "Bikrant J. Budhathoki",
   "license": "MIT",
   "scripts": {
-    "bundle": "rimraf dist && esbuild --outdir=dist --sourcemap --bundle --platform=node --target=node20.10.0 ./src/server.ts",
+    "bundle": "rimraf dist && esbuild --outdir=dist --sourcemap --bundle --platform=node --target=node20.10.0 ./src/server.ts && node -e 'require(\"node:fs\").cpSync(\"bruno/Deployforge\", \"dist/bruno/Deployforge\", { recursive: true })'",
     "compile": "tsc",
     "compile:watch": "tsc -w",
     "dev": "nodemon --watch src --watch test --ext ts,json --exec 'yarn bundle && node --enable-source-maps ./dist/server.js | pino-pretty'",

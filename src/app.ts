@@ -7,6 +7,7 @@ import { authRouter } from "./modules/auth/auth.router";
 import { deploymentRouter } from "./modules/deployment/deployment.router";
 import { projectRouter } from "./modules/project/project.router";
 import { errorHandler } from "./shared/errors/error-handler";
+import { apiDocsRouter } from "./shared/api-docs.router";
 
 export function createApp() {
   const app = express();
@@ -42,6 +43,8 @@ export function createApp() {
       res.json({ status: "ok", timestamp: new Date().toISOString() });
     }),
   );
+
+  app.use(config.API_PREFIX, apiDocsRouter);
 
   app.use(`${config.API_PREFIX}/auth`, authRouter);
   app.use(`${config.API_PREFIX}/projects`, projectRouter);

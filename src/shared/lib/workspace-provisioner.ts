@@ -5,7 +5,7 @@ import path from "node:path";
 const DEFAULT_WORKSPACE_ROOT = "~/.deployforge";
 type ProjectLocation = {
   userId: string;
-  projectName: string;
+  projectId: string;
 };
 
 function expandHome(target: string): string {
@@ -27,9 +27,9 @@ export class WorkspaceProvisioner {
       project.userId === "." ||
       project.userId === ".." ||
       path.basename(project.userId) !== project.userId ||
-      project.projectName === "." ||
-      project.projectName === ".." ||
-      path.basename(project.projectName) !== project.projectName
+      project.projectId === "." ||
+      project.projectId === ".." ||
+      path.basename(project.projectId) !== project.projectId
     ) {
       throw new Error("Invalid workspace destination.");
     }
@@ -39,7 +39,7 @@ export class WorkspaceProvisioner {
     const destination = path.resolve(
       resolvedRoot,
       project.userId,
-      project.projectName,
+      project.projectId,
     );
 
     if (!destination.startsWith(resolvedRoot + path.sep)) {

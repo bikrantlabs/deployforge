@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { logger } from "../logger";
 
 export type CommandStream = "stdout" | "stderr";
 
@@ -63,6 +64,10 @@ export class SpawnCommandRunner implements CommandRunner {
       let stderr = "";
 
       child.stdout.on("data", (data: Buffer) => {
+        logger.info(
+          "========================DATA==============================",
+        );
+        logger.info({ data: data.toString() }, "stdout chunk");
         const chunk = data.toString();
         stdout += chunk;
         options.onOutput?.(chunk, "stdout");

@@ -99,6 +99,7 @@ const envSchema = z.object({
   // App
   CORS_ORIGIN: z.string().default("*"),
   API_PREFIX: z.string().default("/api/v1"),
+  ENABLE_API_DOCS: z.string().optional(),
 });
 
 // Throws at startup if env is misconfigured — better than crashing mid-request
