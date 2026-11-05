@@ -74,6 +74,8 @@ export const projectController = {
     const data = await deployService({
       project: { ...input.project, userId },
       envVariables: input.envVariables,
+      commandOverrides: input.commandOverrides,
+      pruneDevDependencies: input.pruneDevDependencies,
     });
 
     return res.status(202).json({

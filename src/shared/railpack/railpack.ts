@@ -22,10 +22,13 @@ import {
   ProjectConfigDetector,
   ProjectDetection,
 } from "src/modules/project/project-detection.types.js";
+import { CommandOverrides } from "src/modules/project/types.js";
 
 export type RailpackBuildOptions = {
   name: string;
   envVariables: Record<string, string>;
+  commandOverrides?: CommandOverrides;
+  pruneDevDependencies?: boolean;
 };
 
 export class Railpack implements ProjectConfigDetector {
@@ -145,11 +148,24 @@ export class Railpack implements ProjectConfigDetector {
       });
     }
 
-    const imagePrefix = "deployforge_";
-    const args = ["build", ".", "--name", imagePrefix + options.name];
+    const args = ["build", ".", "--name", options.name];
     for (const [key, value] of Object.entries(options.envVariables)) {
       args.push("--env", `${key}=${value}`);
     }
+    const commandNames = {
+      build: "RAILPACK_BUILD_CMD",
+      install: "RAILPACK_INSTALL_CMD",
+      start: "RAILPACK_START_CMD",
+    } as const;
+    for (const [command, value] of Object.entries(options.commandOverrides ?? {})) {
+      if (value) {
+        args.push("--env", `${commandNames[command as keyof typeof commandNames]}=${value}`);
+      }
+    }
+    args.push(
+      "--env",
+      `RAILPACK_PRUNE_DEPS=${options.pruneDevDependencies !== false}`,
+    );
 
     try {
       const result = await this.runner.run(this.binary, args, {

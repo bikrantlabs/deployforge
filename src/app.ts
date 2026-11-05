@@ -44,7 +44,7 @@ export function createApp() {
     }),
   );
 
-  app.use(config.API_PREFIX, apiDocsRouter);
+  app.use(`${config.API_PREFIX}/docs`, apiDocsRouter);
 
   app.use(`${config.API_PREFIX}/auth`, authRouter);
   app.use(`${config.API_PREFIX}/projects`, projectRouter);

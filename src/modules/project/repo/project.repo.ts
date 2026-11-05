@@ -19,6 +19,8 @@ function toPublicProject(project: DbProject): Project {
     projectName: project.name,
     sourceUrl: project.source_url,
     userId: project.user_id,
+    commandOverrides: project.command_overrides,
+    pruneDevDependencies: project.prune_dev_dependencies,
   };
 }
 
@@ -42,13 +44,15 @@ export const createProjectRepository = (pool: Pool): ProjectRepository => {
           label,
         );
         await client.query(
-          "INSERT INTO projects(id, name, source_url, user_id, encrypted_project_key) VALUES($1, $2, $3, $4, $5)",
+          "INSERT INTO projects(id, name, source_url, user_id, encrypted_project_key, command_overrides, prune_dev_dependencies) VALUES($1, $2, $3, $4, $5, $6, $7)",
           [
             data.projectId,
             data.projectName,
             data.sourceUrl,
             data.userId,
             encryptedKey,
+            data.commandOverrides ?? {},
+            data.pruneDevDependencies ?? true,
           ],
         );
       } catch (error) {
@@ -125,6 +129,25 @@ export const createProjectRepository = (pool: Pool): ProjectRepository => {
         config.MASTER_KEY,
         rows[0].encrypted_project_key,
         label,
+      );
+    },
+
+    async updateCommandOverrides(projectId, userId, commandOverrides, client) {
+      await client.query(
+        "UPDATE projects SET command_overrides = $3 WHERE id = $1 AND user_id = $2",
+        [projectId, userId, commandOverrides],
+      );
+    },
+
+    async updatePruneDevDependencies(
+      projectId,
+      userId,
+      pruneDevDependencies,
+      client,
+    ) {
+      await client.query(
+        "UPDATE projects SET prune_dev_dependencies = $3 WHERE id = $1 AND user_id = $2",
+        [projectId, userId, pruneDevDependencies],
       );
     },
   };

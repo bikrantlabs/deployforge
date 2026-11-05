@@ -1,6 +1,6 @@
 import { withTransaction } from "src/shared/infra/db";
 import { projectRepo } from "../repo/project.repo";
-import { Project } from "../types";
+import { CommandOverrides, Project } from "../types";
 import { Railpack } from "src/shared/railpack/railpack";
 import { SpawnCommandRunner } from "src/shared/utils/command-runner";
 import { config } from "src/shared/config/config";
@@ -23,29 +23,62 @@ const logger = createLogger("deploy-service");
 export type DeployServiceInput = {
   project: Project;
   envVariables: Record<string, string>;
-  commandOverrides?: Record<"build" | "start" | "start", string>;
+  commandOverrides?: CommandOverrides;
+  pruneDevDependencies?: boolean;
 };
 
-export async function deployService(input: {
-  project: Project;
-  envVariables: Record<string, string>;
-}) {
+export async function deployService(input: DeployServiceInput) {
   const { project, envVariables } = input;
   const existingProject = await projectRepo.findByIdForUser({
     projectId: project.projectId,
     userId: project.userId,
   });
 
-  const _project = existingProject ?? project;
+  const commandOverrides =
+    input.commandOverrides ??
+    existingProject?.commandOverrides ??
+    project.commandOverrides ??
+    {};
+  const pruneDevDependencies =
+    input.pruneDevDependencies ??
+    existingProject?.pruneDevDependencies ??
+    project.pruneDevDependencies ??
+    true;
+  const _project = {
+    ...(existingProject ?? project),
+    commandOverrides,
+    pruneDevDependencies,
+  };
   const deployment = {
     deploymentId: generateUUID(),
     projectId: _project.projectId,
   };
+  const imageRef = `deployforge_${_project.projectId}:${deployment.deploymentId}`;
   const buildLogPath = buildLogPathFor(deployment.deploymentId);
   // Everything that must be saved before we answer the client.
   await withTransaction(async (client) => {
     if (!existingProject) {
-      await projectRepo.create(project, client);
+      await projectRepo.create(
+        { ...project, commandOverrides, pruneDevDependencies },
+        client,
+      );
+    } else {
+      if (input.commandOverrides !== undefined) {
+        await projectRepo.updateCommandOverrides(
+          _project.projectId,
+          _project.userId,
+          commandOverrides,
+          client,
+        );
+      }
+      if (input.pruneDevDependencies !== undefined) {
+        await projectRepo.updatePruneDevDependencies(
+          _project.projectId,
+          _project.userId,
+          pruneDevDependencies,
+          client,
+        );
+      }
     }
     // Always create a deployment row
     const encryptionKey = await projectRepo.getDecryptedKey(
@@ -63,7 +96,14 @@ export async function deployService(input: {
     );
   });
 
-  void runBuild({ project: _project, deployment, envVariables }).catch(
+  void runBuild({
+    project: _project,
+    deployment,
+    envVariables,
+    commandOverrides,
+    pruneDevDependencies,
+    imageRef,
+  }).catch(
     (err) => {
       logger.error({ err, deployment }, "Background build crashed");
     },
@@ -79,8 +119,18 @@ async function runBuild(input: {
   project: Project;
   deployment: { deploymentId: string; projectId: string };
   envVariables: Record<string, string>;
+  commandOverrides: CommandOverrides;
+  pruneDevDependencies: boolean;
+  imageRef: string;
 }) {
-  const { project, deployment, envVariables } = input;
+  const {
+    project,
+    deployment,
+    envVariables,
+    commandOverrides,
+    pruneDevDependencies,
+    imageRef,
+  } = input;
 
   const destination = workspace.destinationFor(project);
   const buildLogPath = buildLogPathFor(deployment.deploymentId);
@@ -96,7 +146,12 @@ async function runBuild(input: {
     });
     await railpack.build(
       destination,
-      { name: project.projectName, envVariables },
+      {
+        name: imageRef,
+        envVariables,
+        commandOverrides,
+        pruneDevDependencies,
+      },
       onOutput,
     );
     status = "built";
@@ -113,7 +168,11 @@ async function runBuild(input: {
       logger.error({ err, buildLogPath }, "Could not finish build log");
     });
     await projectDeploymentRepo
-      .updateStatus(deployment.deploymentId, status)
+      .updateStatus(
+        deployment.deploymentId,
+        status,
+        status === "built" ? imageRef : null,
+      )
       .catch((err: unknown) => {
         logger.error({ err, deployment }, "Could not update deployment status");
       });

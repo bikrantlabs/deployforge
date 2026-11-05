@@ -25,7 +25,9 @@ async function listDocs(directory = docsRoot, prefix = ""): Promise<DocFile[]> {
         if (entry.isDirectory()) {
           return listDocs(path.join(directory, entry.name), relativePath);
         }
-        if (!entry.isFile()) return [];
+        if (!entry.isFile()) {
+          return [];
+        }
         return [
           {
             path: relativePath,

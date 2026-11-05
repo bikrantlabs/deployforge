@@ -1,6 +1,6 @@
 import { PoolClient } from "pg";
 import { ProjectDetection } from "../project-detection.types";
-import { Project } from "../types";
+import { CommandOverrides, Project } from "../types";
 import { Deployment, DeploymentStatus } from "src/modules/deployment/types";
 
 export type CreateProjectData = {
@@ -8,6 +8,8 @@ export type CreateProjectData = {
   projectName: string;
   sourceUrl: string;
   userId: string;
+  commandOverrides?: CommandOverrides;
+  pruneDevDependencies?: boolean;
 };
 
 export type FindProjectByNameData = {
@@ -35,6 +37,18 @@ export type ProjectRepository = {
   findByIdForUser(data: FindProjectByIdData): Promise<Project | null>;
   deleteByIdForUser(data: FindProjectByIdData): Promise<boolean>;
   getDecryptedKey(projectId: string, client: PoolClient): Promise<Buffer>;
+  updateCommandOverrides(
+    projectId: string,
+    userId: string,
+    commandOverrides: CommandOverrides,
+    client: PoolClient,
+  ): Promise<void>;
+  updatePruneDevDependencies(
+    projectId: string,
+    userId: string,
+    pruneDevDependencies: boolean,
+    client: PoolClient,
+  ): Promise<void>;
 };
 
 export type CreateProjectDetection = {
@@ -94,5 +108,6 @@ export type ProjectDeploymentRepository = {
   updateStatus(
     deploymentId: string,
     status: Extract<ProjectDeploymentStatus, "built" | "failed">,
+    imageRef?: string | null,
   ): Promise<void>;
 };

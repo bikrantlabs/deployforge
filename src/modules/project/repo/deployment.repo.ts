@@ -102,12 +102,12 @@ export const createProjectDeploymentRepository =
         };
       },
 
-      async updateStatus(deploymentId, status) {
+      async updateStatus(deploymentId, status, imageRef = null) {
         await pool.query(
           `UPDATE project_deployments
-           SET status = $2, finished_at = now()
+           SET status = $2, image_ref = $3, finished_at = now()
            WHERE id = $1`,
-          [deploymentId, status],
+          [deploymentId, status, imageRef],
         );
       },
     };

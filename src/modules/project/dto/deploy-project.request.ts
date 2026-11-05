@@ -8,6 +8,14 @@ export const deployProjectRequestSchema = z.object({
       sourceUrl: z.url(),
     }),
     envVariables: z.record(z.string(), z.string()).default({}),
+    commandOverrides: z
+      .object({
+        build: z.string().min(1).optional(),
+        install: z.string().min(1).optional(),
+        start: z.string().min(1).optional(),
+      })
+      .optional(),
+    pruneDevDependencies: z.boolean().optional(),
   }),
 });
 

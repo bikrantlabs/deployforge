@@ -50,4 +50,6 @@ export type DbProject = {
   user_id: string;
   name: string;
   source_url: string;
+  command_overrides: Record<string, string>;
+  prune_dev_dependencies: boolean;
 };
