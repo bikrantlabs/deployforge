@@ -1,3 +1,5 @@
+import type { CommandOverrides, Project } from "src/modules/project/types";
+
 export type QueueRegistry = {
   auth_email: {
     "send-verification-email": {
@@ -6,6 +8,19 @@ export type QueueRegistry = {
     };
     "send-welcome-email": {
       email: string;
+    };
+  };
+  project: {
+    deploy: {
+      jobId: string;
+      projectId: string;
+      userId: string;
+      // Everything the background build needs, captured when the job is queued.
+      project: Project;
+      deployment: { deploymentId: string; projectId: string };
+      commandOverrides: CommandOverrides;
+      pruneDevDependencies: boolean;
+      imageRef: string;
     };
   };
   clone: {

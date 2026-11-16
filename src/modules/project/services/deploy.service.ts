@@ -1,24 +1,12 @@
 import { withTransaction } from "src/shared/infra/db";
 import { projectRepo } from "../repo/project.repo";
 import { CommandOverrides, Project } from "../types";
-import { Railpack } from "src/shared/railpack/railpack";
-import { SpawnCommandRunner } from "src/shared/utils/command-runner";
-import { config } from "src/shared/config/config";
-import { WorkspaceProvisioner } from "src/shared/lib/workspace-provisioner";
-import { createLogger } from "src/shared/logger";
-import { createLogFileWriter } from "src/shared/utils/log-file-writer";
 import { projectDeploymentRepo } from "../repo/deployment.repo";
 import { generateUUID } from "src/shared/utils/uuid-generator";
-import { doneChannel, logBus, logChannel, LogChunk } from "./log-bus";
 import { envVarsRepo } from "../repo/env-vars.repo";
 import { buildLogPathFor } from "src/shared/lib/build-log-path";
-
-const railpack = new Railpack(
-  new SpawnCommandRunner(),
-  config.RAILPACK_BUILD_TIMEOUT_MS,
-);
-const workspace = new WorkspaceProvisioner();
-const logger = createLogger("deploy-service");
+import { Deployment } from "src/modules/deployment/types";
+import { getQueue } from "src/shared/infra/events/queue";
 
 export type DeployServiceInput = {
   project: Project;
@@ -49,12 +37,19 @@ export async function deployService(input: DeployServiceInput) {
     commandOverrides,
     pruneDevDependencies,
   };
-  const deployment = {
+
+  // TODO: Convert the Deployment type into a class and handle creation of deployment entity with proper id and imageRef.
+  const deployment: Deployment = {
     deploymentId: generateUUID(),
     projectId: _project.projectId,
+    imageRef: "",
+    status: "queued",
+    createdAt: new Date(),
   };
   const imageRef = `deployforge_${_project.projectId}:${deployment.deploymentId}`;
+  deployment.imageRef = imageRef;
   const buildLogPath = buildLogPathFor(deployment.deploymentId);
+
   // Everything that must be saved before we answer the client.
   await withTransaction(async (client) => {
     if (!existingProject) {
@@ -96,133 +91,28 @@ export async function deployService(input: DeployServiceInput) {
     );
   });
 
-  void runBuild({
-    project: _project,
-    deployment,
-    envVariables,
-    commandOverrides,
-    pruneDevDependencies,
-    imageRef,
-  }).catch(
-    (err) => {
-      logger.error({ err, deployment }, "Background build crashed");
+  const queue = getQueue("project");
+
+  await queue.add(
+    "deploy",
+    {
+      jobId: deployment.deploymentId,
+      projectId: _project.projectId,
+      userId: _project.userId,
+      project: _project,
+      deployment: {
+        deploymentId: deployment.deploymentId,
+        projectId: deployment.projectId,
+      },
+      commandOverrides,
+      pruneDevDependencies,
+      imageRef,
     },
+    { jobId: deployment.deploymentId },
   );
 
   return {
     project: _project,
     deployment,
   };
-}
-
-async function runBuild(input: {
-  project: Project;
-  deployment: { deploymentId: string; projectId: string };
-  envVariables: Record<string, string>;
-  commandOverrides: CommandOverrides;
-  pruneDevDependencies: boolean;
-  imageRef: string;
-}) {
-  const {
-    project,
-    deployment,
-    envVariables,
-    commandOverrides,
-    pruneDevDependencies,
-    imageRef,
-  } = input;
-
-  const destination = workspace.destinationFor(project);
-  const buildLogPath = buildLogPathFor(deployment.deploymentId);
-  let status: "built" | "failed" = "failed";
-  let logFile: Awaited<ReturnType<typeof createLogFileWriter>> | undefined;
-  let onOutput: BuildOutputHandler | undefined;
-  try {
-    logFile = await createLogFileWriter(buildLogPath);
-    onOutput = createBuildOutputHandler({
-      deploymentId: deployment.deploymentId,
-      envVariables,
-      logFile,
-    });
-    await railpack.build(
-      destination,
-      {
-        name: imageRef,
-        envVariables,
-        commandOverrides,
-        pruneDevDependencies,
-      },
-      onOutput,
-    );
-    status = "built";
-  } catch (err) {
-    logger.error({ err, deployment }, "Railpack build failed");
-  } finally {
-    await onOutput?.flush().catch((err: unknown) => {
-      logger.error(
-        { err, buildLogPath },
-        "Could not persist all build log lines",
-      );
-    });
-    await logFile?.close().catch((err: unknown) => {
-      logger.error({ err, buildLogPath }, "Could not finish build log");
-    });
-    await projectDeploymentRepo
-      .updateStatus(
-        deployment.deploymentId,
-        status,
-        status === "built" ? imageRef : null,
-      )
-      .catch((err: unknown) => {
-        logger.error({ err, deployment }, "Could not update deployment status");
-      });
-    // Tell connected SSE clients to close.
-    logBus.emit(doneChannel(deployment.deploymentId), status);
-  }
-}
-
-type BuildOutputHandler = ((
-  chunk: string,
-  stream: "stdout" | "stderr",
-) => void) & { flush: () => Promise<void> };
-
-function createBuildOutputHandler(opts: {
-  deploymentId: string;
-  envVariables: Record<string, string>;
-  logFile: { write: (line: string) => Promise<void> };
-}): BuildOutputHandler {
-  const { deploymentId, envVariables, logFile } = opts;
-  const secrets = Object.values(envVariables).filter(Boolean);
-
-  // Counts chunks for this deployment. Gives every chunk a stable position.
-  let nextSeq = 0;
-  let pendingWrite = Promise.resolve();
-
-  const onOutput = ((chunk: string, stream: "stdout" | "stderr") => {
-    // Hide secret values before the text goes anywhere.
-    let output = chunk;
-    for (const secret of secrets) {
-      output = output.split(secret).join("[REDACTED]");
-    }
-
-    const lines = output
-      .split("\n")
-      .map((line) => (line.endsWith("\r") ? line.slice(0, -1) : line))
-      .filter((line) => line.trim());
-    const logChunk: LogChunk = {
-      seq: nextSeq++,
-      time: new Date().toISOString(),
-      stream,
-      lines,
-    };
-
-    // Persist before publishing so replay can never miss a live chunk.
-    pendingWrite = pendingWrite.then(async () => {
-      await logFile.write(JSON.stringify(logChunk) + "\n");
-      logBus.emit(logChannel(deploymentId), logChunk);
-    });
-  }) as BuildOutputHandler;
-
-  onOutput.flush = () => pendingWrite;
-  return onOutput;
 }

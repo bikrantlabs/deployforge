@@ -44,6 +44,18 @@ const envSchema = z.object({
     .default(10 * 60 * 1000),
   RAILPACK_MISE_VERSION: z.string().default("2026.10.8"),
 
+  // Deployments stuck in queued/building longer than this are marked failed.
+  DEPLOYMENT_STALE_AFTER_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(20 * 60 * 1000),
+  DEPLOYMENT_STALE_SWEEP_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60_000),
+
   // Database
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 

@@ -9,9 +9,11 @@ import { logger } from "./shared/logger";
 import { ensureMiseCacheLink } from "./shared/railpack/ensure-mise-cache-link";
 import {
   startOutboxRelay,
+  startDeploymentReaper,
   startCloneWorker,
   startDetectWorker,
 } from "./modules/deployment/container";
+import { startDeployWorker } from "./modules/project/workers/deploy.worker";
 
 async function start() {
   try {
@@ -23,9 +25,14 @@ async function start() {
     await connectRedis();
 
     initQueues();
-    const workers = startAllWorkers([startCloneWorker, startDetectWorker]);
+    const workers = startAllWorkers([
+      startCloneWorker,
+      startDetectWorker,
+      startDeployWorker,
+    ]);
     registerAuthEventListener();
     const stopOutboxRelay = startOutboxRelay();
+    const stopDeploymentReaper = startDeploymentReaper();
 
     const app = createApp();
 
@@ -37,6 +44,7 @@ async function start() {
     async function shutdown(signal: string) {
       logger.info({ signal }, "Shutdown signal received");
       stopOutboxRelay();
+      stopDeploymentReaper();
 
       server.close(async () => {
         logger.info("HTTP server closed");

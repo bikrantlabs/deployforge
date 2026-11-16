@@ -2,11 +2,12 @@ import { getPool } from "src/shared/infra/db";
 import { Deployment, DeploymentStatus } from "src/modules/deployment/types";
 import { ProjectDeploymentRepository, ProjectDeploymentStatus } from "./types";
 
+// TODO: Enforce not null for image_ref in the database.
 type DbDeploymentRow = {
   id: string;
   project_id: string;
+  image_ref: string;
   status: DeploymentStatus | null;
-  image_ref: string | null;
   error_message: string | null;
   created_at: Date;
   started_at: Date | null;
@@ -38,10 +39,42 @@ export const createProjectDeploymentRepository =
     return {
       async create(input, client) {
         await client.query(
-          `INSERT INTO project_deployments (id, project_id, build_log_path, status, started_at)
-           VALUES ($1, $2, $3, 'building', now())`,
-          [input.deploymentId, input.projectId, input.buildLogPath],
+          `INSERT INTO project_deployments (id, project_id, build_log_path, image_ref, status)
+           VALUES ($1, $2, $3, $4, 'queued')`,
+          [
+            input.deploymentId,
+            input.projectId,
+            input.buildLogPath,
+            input.imageRef,
+          ],
         );
+      },
+
+      async markBuilding(deploymentId) {
+        const { rowCount } = await pool.query(
+          `UPDATE project_deployments
+           SET status = 'building',
+               started_at = COALESCE(started_at, now()),
+               error_message = NULL,
+               finished_at = NULL
+           WHERE id = $1 AND status IN ('queued', 'building')`,
+          [deploymentId],
+        );
+        return (rowCount ?? 0) > 0;
+      },
+
+      async failStale(staleBefore) {
+        const { rows } = await pool.query<{ id: string }>(
+          `UPDATE project_deployments
+           SET status = 'failed',
+               error_message = 'Deployment timed out before making progress',
+               finished_at = now()
+           WHERE (status = 'building' AND started_at < $1)
+              OR (status = 'queued' AND created_at < $1)
+           RETURNING id`,
+          [staleBefore],
+        );
+        return rows.map((row) => row.id);
       },
 
       async listForUser(userId) {
@@ -102,12 +135,17 @@ export const createProjectDeploymentRepository =
         };
       },
 
-      async updateStatus(deploymentId, status, imageRef = null) {
+      async updateStatus(
+        deploymentId,
+        status,
+        imageRef = null,
+        errorMessage = null,
+      ) {
         await pool.query(
           `UPDATE project_deployments
-           SET status = $2, image_ref = $3, finished_at = now()
+           SET status = $2, image_ref = $3, error_message = $4, finished_at = now()
            WHERE id = $1`,
-          [deploymentId, status, imageRef],
+          [deploymentId, status, imageRef, errorMessage],
         );
       },
     };

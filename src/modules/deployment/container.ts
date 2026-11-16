@@ -2,8 +2,11 @@ import { getPool, withTransaction } from "src/shared/infra/db";
 import { config } from "src/shared/config/config";
 import { WorkspaceProvisioner } from "src/shared/lib/workspace-provisioner";
 import { projectRepo } from "src/modules/project/repo/project.repo";
+import { projectDeploymentRepo } from "src/modules/project/repo/deployment.repo";
 import { projectDetectionRepo } from "src/modules/project/repo/project-detection.repo";
 import { cloneProject } from "src/modules/project/usecases/clone-project.usecase";
+import { doneChannel, logBus } from "src/modules/project/services/log-bus";
+import { createDeploymentReaper } from "./services/deployment-reaper.service";
 import { Railpack } from "src/shared/railpack/railpack";
 import { SpawnCommandRunner } from "src/shared/utils/command-runner";
 import { createDetectProjectService } from "src/modules/project/services/detect-project.service";
@@ -26,6 +29,17 @@ const outboxRepo = createOutboxRepo(pool);
 const outboxRelay = createOutboxRelay({
   outboxRepo,
   publish: (message) => publishOutbox(message, projectJobRepo),
+});
+const deploymentReaper = createDeploymentReaper({
+  projectDeploymentRepo,
+  staleAfterMs: config.DEPLOYMENT_STALE_AFTER_MS,
+  sweepIntervalMs: config.DEPLOYMENT_STALE_SWEEP_INTERVAL_MS,
+  onReaped: (deploymentIds) => {
+    // Close any SSE streams watching a deployment that has been reaped.
+    for (const deploymentId of deploymentIds) {
+      logBus.emit(doneChannel(deploymentId), "failed");
+    }
+  },
 });
 
 const getProjectJobStatusService = createGetProjectJobStatusService({
@@ -52,6 +66,7 @@ const detectProjectService = createDetectProjectService({
 });
 
 export const startOutboxRelay = () => outboxRelay.start();
+export const startDeploymentReaper = () => deploymentReaper.start();
 export const startCloneWorker = () =>
   createCloneWorker({
     projectJobRepo,
@@ -62,7 +77,4 @@ export const startCloneWorker = () =>
 export const startDetectWorker = () =>
   createDetectWorker({ projectJobRepo, detectProjectService });
 
-export {
-  getProjectJobStatusService,
-  detectProjectService,
-};
+export { getProjectJobStatusService, detectProjectService };

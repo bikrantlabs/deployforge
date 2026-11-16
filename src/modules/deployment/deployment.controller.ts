@@ -3,27 +3,22 @@ import { getProjectJobStatusService } from "./container";
 import { GetProjectJobStatusRequestParams } from "./dto/get-project-job-status.request";
 import { GetDeploymentLogsRequestParams } from "./dto/get-deployment-logs.request";
 import { streamDeploymentLogs } from "./services/deployment-logs.service";
-import {
-  listDeployments,
-  listProjectDeployments,
-} from "./services/list-deployments.service";
-import { getDeployment } from "./services/get-deployment.service";
+import { deploymentQueryService } from "./services/deployment-query.service";
 import { ApiResponse } from "src/shared/api-response";
 import { Deployment } from "./types";
 import { ListProjectDeploymentsRequestParams } from "./dto/list-project-deployments.request";
 import { GetDeploymentRequestParams } from "./dto/get-deployment.request";
 
 export const deploymentController = {
-  async getDeployment(
-    req: Request,
-    res: Response<ApiResponse<Deployment>>,
-  ) {
+  async getDeployment(req: Request, res: Response<ApiResponse<Deployment>>) {
     const { deploymentId } =
       req.params as unknown as GetDeploymentRequestParams;
-    const data = await getDeployment({
+    const data = await deploymentQueryService.getDeployment({
       deploymentId,
       userId: req.user!.sub,
     });
+
+    res.set("Cache-Control", "no-store");
 
     return res.json({
       data,
@@ -37,7 +32,9 @@ export const deploymentController = {
     req: Request,
     res: Response<ApiResponse<Deployment[]>>,
   ) {
-    const data = await listDeployments(req.user!.sub);
+    const data = await deploymentQueryService.listDeployments(req.user!.sub);
+
+    res.set("Cache-Control", "no-store");
 
     return res.json({
       data,
@@ -53,10 +50,12 @@ export const deploymentController = {
   ) {
     const { projectId } =
       req.params as unknown as ListProjectDeploymentsRequestParams;
-    const data = await listProjectDeployments({
+    const data = await deploymentQueryService.listProjectDeployments({
       projectId,
       userId: req.user!.sub,
     });
+
+    res.set("Cache-Control", "no-store");
 
     return res.json({
       data,

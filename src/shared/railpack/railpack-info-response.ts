@@ -60,9 +60,10 @@ function toSteps(response: RailpackPlanOutput): ProjectDetection["steps"] {
       continue;
     }
 
+    const lastCommand = (step.commands ?? []).filter(isExecCommand).at(-1);
     steps.push({
       name: step.name, // narrowed to "install" | "build" by the check above
-      commands: (step.commands ?? []).filter(isExecCommand).map((c) => c.cmd),
+      commands: lastCommand ? [lastCommand.cmd] : [],
     });
   }
 

@@ -82,6 +82,7 @@ export type CreateProjectDeploymentData = {
   deploymentId: string;
   projectId: string;
   buildLogPath: string;
+  imageRef: string;
 };
 export type ProjectDeploymentStatus = DeploymentStatus;
 
@@ -109,5 +110,8 @@ export type ProjectDeploymentRepository = {
     deploymentId: string,
     status: Extract<ProjectDeploymentStatus, "built" | "failed">,
     imageRef?: string | null,
+    errorMessage?: string | null,
   ): Promise<void>;
+  markBuilding(deploymentId: string): Promise<boolean>;
+  failStale(staleBefore: Date): Promise<string[]>;
 };

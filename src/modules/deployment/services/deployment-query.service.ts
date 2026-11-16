@@ -2,11 +2,20 @@ import { NotFoundError } from "src/shared/errors/app-error";
 import { projectRepo } from "src/modules/project/repo/project.repo";
 import { projectDeploymentRepo } from "src/modules/project/repo/deployment.repo";
 
-export function listDeployments(userId: string) {
+async function getDeployment(input: { deploymentId: string; userId: string }) {
+  const deployment = await projectDeploymentRepo.findByIdForUser(input);
+  if (!deployment) {
+    throw new NotFoundError("Deployment");
+  }
+
+  return deployment;
+}
+
+function listDeployments(userId: string) {
   return projectDeploymentRepo.listForUser(userId);
 }
 
-export async function listProjectDeployments(input: {
+async function listProjectDeployments(input: {
   projectId: string;
   userId: string;
 }) {
@@ -17,3 +26,9 @@ export async function listProjectDeployments(input: {
 
   return projectDeploymentRepo.listForProject(input);
 }
+
+export const deploymentQueryService = {
+  getDeployment,
+  listDeployments,
+  listProjectDeployments,
+};

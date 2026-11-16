@@ -37,12 +37,12 @@ export type DeploymentStatus =
 export type Deployment = {
   deploymentId: string;
   projectId: string;
-  status: DeploymentStatus | null;
-  imageRef: string | null;
-  errorMessage: string | null;
+  imageRef: string;
+  status?: DeploymentStatus | null;
+  errorMessage?: string | null;
   createdAt: Date;
-  startedAt: Date | null;
-  finishedAt: Date | null;
+  startedAt?: Date | null;
+  finishedAt?: Date | null;
 };
 
 export type JobStage = {
